@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"image"
+	"image/color"
 	_ "image/png"
 	"log"
 	"math"
@@ -87,6 +89,7 @@ type Game struct {
 	skycolor          string
 	treecolor         string
 	fogcolor          string
+	fogImage          *ebiten.Image
 }
 
 func (g *Game) Initialize() {
@@ -149,6 +152,27 @@ func (g *Game) Initialize() {
 	g.playerImage = playerImage
 	g.playerSprites = playerSprites
 
+	g.generateFog()
+
+}
+
+func (g *Game) generateFog() {
+	const fogHeight = 16
+	w := screenWidth
+	fogRGBA := image.NewRGBA(image.Rect(0, 0, w, fogHeight))
+	for j := 0; j < fogHeight; j++ {
+		a := uint32(float64(fogHeight-1-j) * 0xff / (fogHeight - 1))
+		clr := color.RGBA{0x00, 0x51, 0x08, 0xff}
+		r, g, b, oa := uint32(clr.R), uint32(clr.G), uint32(clr.B), uint32(clr.A)
+		clr.R = uint8(r * a / oa)
+		clr.G = uint8(g * a / oa)
+		clr.B = uint8(b * a / oa)
+		clr.A = uint8(a)
+		for i := 0; i < w; i++ {
+			fogRGBA.SetRGBA(i, j, clr)
+		}
+	}
+	g.fogImage = ebiten.NewImageFromImage(fogRGBA)
 }
 
 func (g *Game) loadSpriteSheet(file string) (error, *ebiten.Image, map[string]*spritesheet.Sprite) {
@@ -314,8 +338,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			0,
 			segment.color)
 	}
-
-	screen.DrawImage(g.render.Image(), nil)
+	roadImg := g.render.Image()
+	fogop := &ebiten.DrawImageOptions{}
+	fogop.GeoM.Translate(0, screenHeight/2)
+	roadImg.DrawImage(g.fogImage, fogop)
+	screen.DrawImage(roadImg, nil)
 	g.render.Clear()
 
 	scale := g.world.cameraDepth / g.world.playerZ
