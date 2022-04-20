@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	ss "github.com/paran01d/race/spritesheet"
+	ss "github.com/paran01d/pseudorace/spritesheet"
 	"github.com/stretchr/testify/require"
 )
 
@@ -252,7 +252,7 @@ func Test_SpriteSheet_Sprites(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		for i, _ := range test.expected {
+		for i := range test.expected {
 			test.expected[i].Sheet = test.sheet
 		}
 

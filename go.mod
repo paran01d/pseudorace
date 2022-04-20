@@ -1,4 +1,4 @@
-module github.com/paran01d/psuedorace
+module github.com/paran01d/pseudorace
 
 go 1.17
 

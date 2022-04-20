@@ -10,8 +10,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/paran01d/psuedorace/renderer"
-	"github.com/paran01d/psuedorace/spritesheet"
+	"github.com/paran01d/pseudorace/renderer"
+	"github.com/paran01d/pseudorace/spritesheet"
 )
 
 const (
