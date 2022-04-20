@@ -1,0 +1,12 @@
+image: images/background.png
+
+rows: 3
+cols: 1
+sizex: 1280
+sizey: 480
+
+sprites: [
+  hills,
+  sky,
+  trees
+]
