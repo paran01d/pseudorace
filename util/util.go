@@ -47,6 +47,18 @@ func (u *Util) Increase(start float64, increment float64, max float64) float64 {
 	return result
 }
 
+func (u *Util) EaseIn(a, b, percent float64) float64 {
+	return a + (b-a)*math.Pow(percent, 2)
+}
+
+func (u *Util) EaseOut(a, b, percent float64) float64 {
+	return a + (b-a)*(1-math.Pow(1-percent, 2))
+}
+
+func (u *Util) EaseInOut(a, b, percent float64) float64 {
+	return a + (b-a)*((-math.Cos(percent*math.Pi)/2)+0.5)
+}
+
 func (u *Util) Project(gp *Gamepoint, cameraX, cameraY, cameraZ, cameraDepth, width, height, roadWidth float64) {
 	gp.Camera.X = (gp.World.X) - cameraX
 	gp.Camera.Y = (gp.World.Y) - cameraY
