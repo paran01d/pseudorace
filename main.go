@@ -32,6 +32,7 @@ type gameConfig struct {
 	cameraHeight  float64
 	drawDistance  int
 	fogDensity    int
+	centrifugal   float64
 }
 
 type worldValues struct {
@@ -93,6 +94,7 @@ func (g *Game) Initialize() {
 		cameraHeight:  2000,
 		drawDistance:  300,
 		fogDensity:    5,
+		centrifugal:   0.3,
 	}
 
 	// Setup the world
@@ -171,11 +173,19 @@ func (g *Game) loadSpriteSheet(file string) (error, *ebiten.Image, map[string]*s
 }
 
 func (g *Game) Update() error {
-	dt := (1 / ebiten.CurrentTPS())
+	var playerSegment = g.road.FindSegment(int(g.world.position + g.world.playerZ))
+	tps := ebiten.CurrentTPS()
+	if tps == 0 {
+		tps = 60
+	}
+	dt := (1 / tps)
+	speedPercent := (g.world.speed / g.world.maxSpeed)
+	dx := dt * 2 * speedPercent
+	if math.IsNaN(dx) {
+		dx = 0
+	}
 
 	g.world.position = g.util.Increase(g.world.position, g.world.speed, float64(g.world.trackLength))
-
-	dx := dt * 2 * (g.world.speed / g.world.maxSpeed)
 
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
 		return errors.New("Quit pressed")
@@ -191,6 +201,8 @@ func (g *Game) Update() error {
 		g.world.playerX = g.world.playerX + dx
 		g.world.playerMode = "right"
 	}
+
+	g.world.playerX = g.world.playerX - dx*speedPercent*playerSegment.Curve*g.config.centrifugal
 
 	if ebiten.IsKeyPressed(ebiten.KeyUp) {
 		g.world.speed = g.util.Accelerate(g.world.speed, g.world.accel, dt)
@@ -212,7 +224,7 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	debugImage := ebiten.NewImage(screenWidth, screenHeight)
-	ebitenutil.DebugPrintAt(debugImage, fmt.Sprintf("TPS: %f Speed: %f Position: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position), 50, 50)
+	ebitenutil.DebugPrintAt(debugImage, fmt.Sprintf("TPS: %f Speed: %f Position: %f PlayerX: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position, g.world.playerX), 50, 50)
 
 	// draw segements
 	baseSegment := g.road.FindSegment(int(g.world.position))
