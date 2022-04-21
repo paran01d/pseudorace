@@ -30,7 +30,7 @@ func (r *Renderer) Clear() {
 	r.ctx.ClearPath()
 }
 
-func (r *Renderer) Segment(width, lanes int, x1, y1, w1, x2, y2, w2, fog float64, color SegmentColor) {
+func (r *Renderer) Segment(width, lanes int, x1, y1, w1, x2, y2, w2 float64, color SegmentColor) {
 	r1 := r.rumbleWidth(w1, float64(lanes))
 	r2 := r.rumbleWidth(w2, float64(lanes))
 	l1 := r.laneMakerWidth(w1, float64(lanes))
