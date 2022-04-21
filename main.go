@@ -216,7 +216,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	// draw segements
 	baseSegment := g.road.FindSegment(int(g.world.position))
+	basePercent := g.util.PercentRemaining(int(g.world.position), g.config.segmentLength)
 	maxy := screenHeight
+
+	x := 0.0
+	dx := -(baseSegment.Curve * basePercent)
 
 	screen.DrawImage(g.backgroundImage.SubImage(g.backgroundSprites["sky"].Rect()).(*ebiten.Image), nil)
 	screen.DrawImage(g.backgroundImage.SubImage(g.backgroundSprites["hills"].Rect()).(*ebiten.Image), nil)
@@ -230,8 +234,29 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		if segment.Looped {
 			camzmodifier = float64(g.world.trackLength)
 		}
-		g.util.Project(&segment.P1, (g.world.playerX * g.config.roadWidth), g.config.cameraHeight, g.world.position-camzmodifier, g.world.cameraDepth, screenWidth, screenHeight, g.config.roadWidth)
-		g.util.Project(&segment.P2, (g.world.playerX * g.config.roadWidth), g.config.cameraHeight, g.world.position-camzmodifier, g.world.cameraDepth, screenWidth, screenHeight, g.config.roadWidth)
+		g.util.Project(
+			&segment.P1,
+			(g.world.playerX*g.config.roadWidth)-x,
+			g.config.cameraHeight,
+			g.world.position-camzmodifier,
+			g.world.cameraDepth,
+			screenWidth,
+			screenHeight,
+			g.config.roadWidth,
+		)
+		g.util.Project(
+			&segment.P2,
+			(g.world.playerX*g.config.roadWidth)-x-dx,
+			g.config.cameraHeight,
+			g.world.position-camzmodifier,
+			g.world.cameraDepth,
+			screenWidth,
+			screenHeight,
+			g.config.roadWidth,
+		)
+
+		x = x + dx
+		dx = dx + segment.Curve
 
 		if (segment.P1.Camera.Z <= g.world.cameraDepth) || // behind us
 			(int(segment.P2.Screen.Y) >= maxy) { // clip by (already rendered) segment
@@ -278,11 +303,11 @@ func main() {
 	rand.Seed(100)
 	game := &Game{}
 	game.Initialize()
-	game.world.trackLength = game.road.BuildTrack()
 	util := util.NewUtil()
 	track := track.NewTrack(game.config.rumbleLength, game.config.segmentLength, game.world.playerZ, util)
 	game.util = util
 	game.road = track
+	game.world.trackLength = game.road.BuildTrack()
 
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)

@@ -59,6 +59,10 @@ func (u *Util) EaseInOut(a, b, percent float64) float64 {
 	return a + (b-a)*((-math.Cos(percent*math.Pi)/2)+0.5)
 }
 
+func (u *Util) PercentRemaining(n, total int) float64 {
+	return float64((n % total) / total)
+}
+
 func (u *Util) Project(gp *Gamepoint, cameraX, cameraY, cameraZ, cameraDepth, width, height, roadWidth float64) {
 	gp.Camera.X = (gp.World.X) - cameraX
 	gp.Camera.Y = (gp.World.Y) - cameraY
