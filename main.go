@@ -14,6 +14,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/paran01d/pseudorace/renderer"
 	"github.com/paran01d/pseudorace/spritesheet"
+	"github.com/paran01d/pseudorace/util"
 )
 
 const (
@@ -51,32 +52,14 @@ type worldValues struct {
 
 type segment struct {
 	index  int
-	p1     gamepoint
-	p2     gamepoint
+	p1     util.Gamepoint
+	p2     util.Gamepoint
 	color  renderer.SegmentColor
 	looped bool
 }
 
-type gamepoint struct {
-	world  zpoint
-	camera zpoint
-	screen screenpoint
-}
-
-type zpoint struct {
-	x float64
-	y float64
-	z float64
-}
-
-type screenpoint struct {
-	x     float64
-	y     float64
-	w     float64
-	scale float64
-}
-
 type Game struct {
+	util              *util.Util
 	config            gameConfig
 	world             worldValues
 	segments          []segment
@@ -200,14 +183,14 @@ func (g *Game) buildTrack() {
 
 		g.segments = append(g.segments, segment{
 			index: n,
-			p1: gamepoint{
-				world: zpoint{
-					z: float64(n * g.config.segmentLength),
+			p1: util.Gamepoint{
+				World: util.Zpoint{
+					Z: float64(n * g.config.segmentLength),
 				},
 			},
-			p2: gamepoint{
-				world: zpoint{
-					z: float64((n + 1) * g.config.segmentLength),
+			p2: util.Gamepoint{
+				World: util.Zpoint{
+					Z: float64((n + 1) * g.config.segmentLength),
 				},
 			},
 			color: color,
@@ -233,7 +216,7 @@ func (g *Game) findSegment(z int) segment {
 func (g *Game) Update() error {
 	dt := (1 / ebiten.CurrentTPS())
 
-	g.world.position = g.increase(g.world.position, g.world.speed, float64(g.world.trackLength))
+	g.world.position = g.util.Increase(g.world.position, g.world.speed, float64(g.world.trackLength))
 
 	dx := dt * 2 * (g.world.speed / g.world.maxSpeed)
 
@@ -253,55 +236,25 @@ func (g *Game) Update() error {
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyUp) {
-		g.world.speed = g.accelerate(g.world.speed, g.world.accel, dt)
+		g.world.speed = g.util.Accelerate(g.world.speed, g.world.accel, dt)
 	} else if ebiten.IsKeyPressed(ebiten.KeyDown) {
-		g.world.speed = g.accelerate(g.world.speed, g.world.breaking, dt)
+		g.world.speed = g.util.Accelerate(g.world.speed, g.world.breaking, dt)
 	} else {
-		g.world.speed = g.accelerate(g.world.speed, g.world.decel, dt)
+		g.world.speed = g.util.Accelerate(g.world.speed, g.world.decel, dt)
 	}
 
 	if (g.world.playerX < -1 || g.world.playerX > 1) && g.world.speed > g.world.offRoadLimit {
-		g.world.speed = g.accelerate(g.world.speed, g.world.offRoadDecel, dt)
+		g.world.speed = g.util.Accelerate(g.world.speed, g.world.offRoadDecel, dt)
 	}
 
-	g.world.playerX = g.limit(g.world.playerX, -2, 2)           // dont ever let player go too far out of bounds
-	g.world.speed = g.limit(g.world.speed, 0, g.world.maxSpeed) // or exceed maxSpeed
+	g.world.playerX = g.util.Limit(g.world.playerX, -2, 2)           // dont ever let player go too far out of bounds
+	g.world.speed = g.util.Limit(g.world.speed, 0, g.world.maxSpeed) // or exceed maxSpeed
 
 	return nil
 }
 
-func (g *Game) limit(value, min, max float64) float64 {
-	return math.Max(min, math.Min(value, max))
-}
-
-func (g *Game) accelerate(v, accel float64, dt float64) float64 {
-	return v + accel*dt
-}
-
-func (g *Game) increase(start float64, increment float64, max float64) float64 {
-	var result = start + increment
-	for result >= max {
-		result -= max
-	}
-	for result < 0 {
-		result += max
-	}
-	return result
-}
-
-func (g *Game) project(gp *gamepoint, cameraX, cameraY, cameraZ, cameraDepth, width, height, roadWidth float64) {
-	gp.camera.x = (gp.world.x) - cameraX
-	gp.camera.y = (gp.world.y) - cameraY
-	gp.camera.z = (gp.world.z) - cameraZ
-	gp.screen.scale = cameraDepth / gp.camera.z
-	gp.screen.x = math.Round((width / 2) + (gp.screen.scale * gp.camera.x * width / 2))
-	gp.screen.y = math.Round((height / 2) - (gp.screen.scale * gp.camera.y * height / 2))
-	gp.screen.w = math.Round((gp.screen.scale * roadWidth * width / 2))
-}
-
 func (g *Game) Draw(screen *ebiten.Image) {
 	debugImage := ebiten.NewImage(screenWidth, screenHeight)
-	ebitenutil.DebugPrint(debugImage, "Hello, World!\n")
 	ebitenutil.DebugPrintAt(debugImage, fmt.Sprintf("TPS: %f Speed: %f Position: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position), 50, 50)
 
 	// draw segements
@@ -320,21 +273,21 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		if segment.looped {
 			camzmodifier = float64(g.world.trackLength)
 		}
-		g.project(&segment.p1, (g.world.playerX * g.config.roadWidth), g.config.cameraHeight, g.world.position-camzmodifier, g.world.cameraDepth, screenWidth, screenHeight, g.config.roadWidth)
-		g.project(&segment.p2, (g.world.playerX * g.config.roadWidth), g.config.cameraHeight, g.world.position-camzmodifier, g.world.cameraDepth, screenWidth, screenHeight, g.config.roadWidth)
+		g.util.Project(&segment.p1, (g.world.playerX * g.config.roadWidth), g.config.cameraHeight, g.world.position-camzmodifier, g.world.cameraDepth, screenWidth, screenHeight, g.config.roadWidth)
+		g.util.Project(&segment.p2, (g.world.playerX * g.config.roadWidth), g.config.cameraHeight, g.world.position-camzmodifier, g.world.cameraDepth, screenWidth, screenHeight, g.config.roadWidth)
 
-		if (segment.p1.camera.z <= g.world.cameraDepth) || // behind us
-			(int(segment.p2.screen.y) >= maxy) { // clip by (already rendered) segment
+		if (segment.p1.Camera.Z <= g.world.cameraDepth) || // behind us
+			(int(segment.p2.Screen.Y) >= maxy) { // clip by (already rendered) segment
 			continue
 		}
 
 		g.render.Segment(screenWidth, g.config.lanes,
-			segment.p1.screen.x,
-			segment.p1.screen.y,
-			segment.p1.screen.w,
-			segment.p2.screen.x,
-			segment.p2.screen.y,
-			segment.p2.screen.w,
+			segment.p1.Screen.X,
+			segment.p1.Screen.Y,
+			segment.p1.Screen.W,
+			segment.p2.Screen.X,
+			segment.p2.Screen.Y,
+			segment.p2.Screen.W,
 			0,
 			segment.color)
 	}
@@ -352,14 +305,13 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	destW := ((128 * scale * screenWidth) / 2) * (spriteScale * g.config.roadWidth)
 	destH := ((128 * scale * screenWidth) / 2) * (spriteScale * g.config.roadWidth)
 
-	destX := ((screenWidth - destW) / 2)     // * -0.5
-	destY := (screenHeight + bounce - destH) // * -1
+	destX := ((screenWidth - destW) / 2)
+	destY := (screenHeight + bounce - destH)
 	ebitenutil.DebugPrintAt(debugImage, fmt.Sprintf("DestW: %f DestX: %f DestY: %f ", destW, destX, destY), 50, 100)
 	op.GeoM.Scale(destW/128, destH/128)
 	op.GeoM.Translate(destX, destY)
 	screen.DrawImage(g.playerImage.SubImage(g.playerSprites[g.world.playerMode].Rect()).(*ebiten.Image), op)
 	screen.DrawImage(debugImage, nil)
-
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -368,10 +320,12 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 
 func main() {
 	ebiten.SetWindowSize(screenWidth, screenHeight)
-	ebiten.SetWindowTitle("Hello, World!")
+	ebiten.SetWindowTitle("pseudorace")
 
 	rand.Seed(100)
-	game := &Game{}
+	game := &Game{
+		util: util.NewUtil(),
+	}
 	game.Initialize()
 	game.buildTrack()
 
