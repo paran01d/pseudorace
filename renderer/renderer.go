@@ -1,6 +1,7 @@
 package renderer
 
 import (
+	"image"
 	"math"
 
 	"github.com/fogleman/gg"
@@ -28,6 +29,19 @@ func NewRenderer(width, height int) *Renderer {
 func (r *Renderer) Clear() {
 	r.img.Clear()
 	r.ctx.ClearPath()
+}
+
+func (r *Renderer) Background(srcImg image.Image, offset float64, dstImg *ebiten.Image) {
+	const repeat = 4
+	w, h := srcImg.(*ebiten.Image).Size()
+	for j := 0; j < repeat; j++ {
+		for i := 0; i < repeat; i++ {
+			op := ebiten.DrawImageOptions{}
+			op.GeoM.Translate(float64(w*i), float64(h*j))
+			op.GeoM.Translate(offset, 0)
+			dstImg.DrawImage(srcImg.(*ebiten.Image), &op)
+		}
+	}
 }
 
 func (r *Renderer) Segment(width, lanes int, x1, y1, w1, x2, y2, w2 float64, color SegmentColor) {
