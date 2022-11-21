@@ -132,6 +132,19 @@ func (t *Track) BuildTrack() int {
 	return len(t.Segments) * t.SegmentLength
 }
 
+func (t *Track) BuildCircleTrack() int {
+	t.Segments = make([]Segment, 0)
+	t.addRoad(t.Length["medium"], t.Length["medium"], t.Length["medium"], -t.Curve["long"])
+
+	// Start and Finish markers
+	t.Segments[t.FindSegment(int(t.playerZ)).Index+2].Color = t.colors["START"]
+	t.Segments[t.FindSegment(int(t.playerZ)).Index+3].Color = t.colors["START"]
+	for n := 0; n < t.RumbleLength; n++ {
+		t.Segments[len(t.Segments)-1-n].Color = t.colors["FINISH"]
+	}
+
+	return len(t.Segments) * t.SegmentLength
+}
 func (t *Track) FindSegment(z int) Segment {
 	if z < 0 {
 		z = 0
