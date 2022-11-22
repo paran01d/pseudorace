@@ -33,9 +33,6 @@ type gameConfig struct {
 	drawDistance  int
 	fogDensity    int
 	centrifugal   float64
-	skySpeed      float64
-	hillSpeed     float64
-	treeSpeed     float64
 }
 
 type worldValues struct {
@@ -55,27 +52,23 @@ type worldValues struct {
 	offRoadLimit float64
 	spriteScale  float64
 	screenScale  float64
-	skyOffset    float64
-	hillOffset   float64
-	treeOffset   float64
 }
 
 type Game struct {
-	util              *util.Util
-	config            gameConfig
-	world             worldValues
-	render            *renderer.Renderer
-	backgroundImage   *ebiten.Image
-	backgroundSprites map[string]*spritesheet.Sprite
-	playerImage       *ebiten.Image
-	playerSprites     map[string]*spritesheet.Sprite
-	colors            map[string]renderer.SegmentColor
-	skycolor          string
-	treecolor         string
-	fogcolor          string
-	fogImage          *ebiten.Image
-	bgImage           *ebiten.Image
-	road              *track.Track
+	util          *util.Util
+	config        gameConfig
+	world         worldValues
+	render        *renderer.Renderer
+	background    renderer.Background
+	playerImage   *ebiten.Image
+	playerSprites map[string]*spritesheet.Sprite
+	colors        map[string]renderer.SegmentColor
+	skycolor      string
+	treecolor     string
+	fogcolor      string
+	fogImage      *ebiten.Image
+	bgImage       *ebiten.Image
+	road          *track.Track
 }
 
 func (g *Game) Initialize() {
@@ -102,9 +95,6 @@ func (g *Game) Initialize() {
 		drawDistance:  300,
 		fogDensity:    5,
 		centrifugal:   0.3,
-		skySpeed:      0.1, // background sky layer scroll speed when going around curve (or up hill)
-		hillSpeed:     0.2, // background hill layer scroll speed when going around curve (or up hill)
-		treeSpeed:     0.3, // background tree layer scroll speed when going around curve (or up hill)
 	}
 
 	// Setup the world
@@ -117,9 +107,6 @@ func (g *Game) Initialize() {
 		position:    0,
 		speed:       0,
 		maxSpeed:    float64(380),
-		skyOffset:   0.0,
-		hillOffset:  0.0,
-		treeOffset:  0.0,
 	}
 	g.world.accel = g.world.maxSpeed / 5
 	g.world.breaking = -g.world.maxSpeed
@@ -137,8 +124,14 @@ func (g *Game) Initialize() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	g.backgroundImage = backgroundImage
-	g.backgroundSprites = backgroundSprites
+	g.background = renderer.Background{
+		Image: backgroundImage,
+		Parts: []*renderer.BackgroundPart{
+			{Speed: 0.1, Sprite: backgroundImage.SubImage(backgroundSprites["sky"].Rect()).(*ebiten.Image), Offset: 1408},
+			{Speed: 0.2, Sprite: backgroundImage.SubImage(backgroundSprites["hills"].Rect()).(*ebiten.Image), Offset: 1408},
+			{Speed: 0.3, Sprite: backgroundImage.SubImage(backgroundSprites["trees"].Rect()).(*ebiten.Image), Offset: 1408},
+		},
+	}
 
 	err, playerImage, playerSprites := g.loadSpriteSheet("images/player.yml")
 	if err != nil {
@@ -201,23 +194,19 @@ func (g *Game) Update() error {
 
 	g.world.position = g.util.Increase(g.world.position, g.world.speed, float64(g.world.trackLength))
 
-	g.world.skyOffset = g.util.Increase(
-		g.world.skyOffset,
-		g.config.skySpeed*playerSegment.Curve*speedPercent,
-		9999,
-	)
-
-	g.world.hillOffset = g.util.Increase(
-		g.world.hillOffset,
-		g.config.hillSpeed*playerSegment.Curve*speedPercent,
-		9999,
-	)
-
-	g.world.treeOffset = g.util.Increase(
-		g.world.treeOffset,
-		g.config.treeSpeed*playerSegment.Curve*speedPercent,
-		9999,
-	)
+	for _, part := range g.background.Parts {
+		part.Offset = g.util.Increase(
+			part.Offset,
+			part.Speed*playerSegment.Curve*speedPercent,
+			2688,
+		)
+		if part.Offset >= 0 && part.Offset < 1 {
+			part.Offset = 1408
+		}
+		if part.Offset <= 128 {
+			part.Offset = 1408
+		}
+	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
 		return errors.New("Quit pressed")
@@ -255,9 +244,8 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	debugImage := ebiten.NewImage(screenWidth, screenHeight)
-	ebitenutil.DebugPrintAt(debugImage, fmt.Sprintf("TPS: %f Speed: %f Position: %f PlayerX: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position, g.world.playerX), 50, 50)
-	ebitenutil.DebugPrintAt(debugImage, fmt.Sprintf("Skyoffset: %f Hilloffset: %f treeOffset: %f", g.world.skyOffset, g.world.hillOffset, g.world.treeOffset), 150, 150)
+	g.render.ResetDebug()
+	g.render.DebugPrintAt(fmt.Sprintf("TPS: %f Speed: %f Position: %f PlayerX: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position, g.world.playerX), 50, 50)
 
 	// draw segements
 	baseSegment := g.road.FindSegment(int(g.world.position))
@@ -266,9 +254,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	x := 0.0
 	dx := -(baseSegment.Curve * basePercent)
-	g.render.Background(g.backgroundImage.SubImage(g.backgroundSprites["sky"].Rect()), -g.world.skyOffset, g.bgImage)
-	g.render.Background(g.backgroundImage.SubImage(g.backgroundSprites["hills"].Rect()), -g.world.hillOffset, g.bgImage)
-	g.render.Background(g.backgroundImage.SubImage(g.backgroundSprites["trees"].Rect()), -g.world.treeOffset, g.bgImage)
+	g.render.Background(g.background, g.bgImage)
 	screen.DrawImage(g.bgImage, nil)
 
 	for n := 0; n < g.config.drawDistance; n++ {
@@ -334,7 +320,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	op.GeoM.Scale(destW/128, destH/128)
 	op.GeoM.Translate(destX, destY)
 	screen.DrawImage(g.playerImage.SubImage(g.playerSprites[g.world.playerMode].Rect()).(*ebiten.Image), op)
-	screen.DrawImage(debugImage, nil)
+	screen.DrawImage(g.render.DebugImage(), nil)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -353,6 +339,7 @@ func main() {
 	game.util = util
 	game.road = track
 	game.world.trackLength = game.road.BuildCircleTrack()
+	//game.world.trackLength = game.road.BuildTrack()
 
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)

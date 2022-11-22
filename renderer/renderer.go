@@ -1,16 +1,18 @@
 package renderer
 
 import (
-	"image"
+	"fmt"
 	"math"
 
 	"github.com/fogleman/gg"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 type Renderer struct {
-	ctx *gg.Context
-	img *ebiten.Image
+	ctx        *gg.Context
+	img        *ebiten.Image
+	debugImage *ebiten.Image
 }
 
 type SegmentColor struct {
@@ -20,9 +22,23 @@ type SegmentColor struct {
 	Lane   string
 }
 
+type BackgroundPart struct {
+	X16    int
+	Y16    int
+	Offset float64
+	Speed  float64
+	Sprite *ebiten.Image
+}
+
+type Background struct {
+	Image *ebiten.Image
+	Parts []*BackgroundPart
+}
+
 func NewRenderer(width, height int) *Renderer {
 	return &Renderer{
-		ctx: gg.NewContext(width, height),
+		ctx:        gg.NewContext(width, height),
+		debugImage: ebiten.NewImage(width, height),
 	}
 }
 
@@ -31,16 +47,40 @@ func (r *Renderer) Clear() {
 	r.ctx.ClearPath()
 }
 
-func (r *Renderer) Background(srcImg image.Image, offset float64, dstImg *ebiten.Image) {
-	const repeat = 4
-	w, h := srcImg.(*ebiten.Image).Size()
-	for j := 0; j < repeat; j++ {
-		for i := 0; i < repeat; i++ {
-			op := ebiten.DrawImageOptions{}
-			op.GeoM.Translate(float64(w*i), float64(h*j))
-			op.GeoM.Translate(offset, 0)
-			dstImg.DrawImage(srcImg.(*ebiten.Image), &op)
+func (r *Renderer) DebugPrintAt(msg string, xpos, ypos int) {
+	ebitenutil.DebugPrintAt(r.debugImage, msg, xpos, ypos)
+}
+
+func (r *Renderer) DebugImage() *ebiten.Image {
+	return r.debugImage
+}
+
+func (r *Renderer) ResetDebug() {
+	r.debugImage.Clear()
+}
+
+func (r *Renderer) Background(background Background, dstImg *ebiten.Image) {
+
+	w, h := background.Image.Size()
+	//repeat := int(math.Ceil((float64(r.ctx.Width()) / float64(w)))) + 1
+	repeat := 3
+	r.DebugPrintAt(fmt.Sprintf("Offset: %f", background.Parts[2].Offset), 50, 150)
+	for pindex, part := range background.Parts {
+
+		bgpart := ebiten.NewImage(w*repeat, h)
+
+		// Draw bgImage on the screen repeatedly.
+		for j := 0; j < repeat; j++ {
+			for i := 0; i < repeat; i++ {
+				op := &ebiten.DrawImageOptions{}
+				op.GeoM.Translate(float64(w*i), float64(h*j))
+				bgpart.DrawImage(part.Sprite, op)
+				ebitenutil.DebugPrintAt(bgpart, fmt.Sprintf("%d-%d", pindex, i), w*i+50, h*j+(50*pindex))
+			}
 		}
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(-part.Offset, 0)
+		dstImg.DrawImage(bgpart, op)
 	}
 }
 
