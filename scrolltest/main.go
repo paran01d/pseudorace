@@ -6,6 +6,7 @@ import (
 	"image"
 	_ "image/png"
 	"log"
+	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -19,6 +20,7 @@ const (
 
 var (
 	bgImage *ebiten.Image
+	repeat  int
 )
 
 func init() {
@@ -31,6 +33,9 @@ func init() {
 		log.Fatal(err)
 	}
 	bgImage = ebiten.NewImageFromImage(img)
+	w, _ := bgImage.Size()
+	repeat = int(math.Ceil((float64(screenWidth) / float64(w)))) + 1
+	fmt.Printf("Repeat: %d", repeat)
 }
 
 type viewport struct {
@@ -40,10 +45,10 @@ type viewport struct {
 
 func (p *viewport) Move() {
 	w, _ := bgImage.Size()
-	maxX16 := w * 16
+	maxX16 := w
 	//maxY16 := h * 16
 
-	p.x16 -= w / 32
+	p.x16 += 1
 	//p.y16 += h / 32
 	p.x16 %= maxX16
 	//p.y16 %= maxY16
@@ -64,10 +69,9 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	x16, y16 := g.viewport.Position()
-	offsetX, offsetY := float64(x16)/16, float64(-y16)/16
+	offsetX, offsetY := float64(x16), float64(y16)
 
 	// Draw bgImage on the screen repeatedly.
-	const repeat = 4
 	w, h := bgImage.Size()
 	for j := 0; j < repeat; j++ {
 		for i := 0; i < repeat; i++ {
@@ -78,7 +82,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f bgImage w: %d h: %d", ebiten.CurrentTPS(), w, h))
+	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("TPS: %0.2f x16: %d, xoffset: %f, bgImage w: %d", ebiten.CurrentTPS(), x16, offsetX, w), 0, 50)
+	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("screenwidth: %d Repeat: %d", screenWidth, repeat), 0, 150)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -86,7 +91,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
-	ebiten.SetWindowSize(screenWidth*2, screenHeight*2)
+	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Infinite Scroll (Ebiten Demo)")
 	if err := ebiten.RunGame(&Game{}); err != nil {
 		log.Fatal(err)
