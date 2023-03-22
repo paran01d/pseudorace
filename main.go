@@ -250,6 +250,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// draw segements
 	baseSegment := g.road.FindSegment(int(g.world.position))
 	basePercent := g.util.PercentRemaining(int(g.world.position), g.config.segmentLength)
+	playerSegment := g.road.FindSegment(int(g.world.position + g.world.playerZ))
+	playerPercent := g.util.PercentRemaining(int(g.world.position+g.world.playerZ), g.config.segmentLength)
+	playerY := g.util.Interpolate(playerSegment.P1.World.Y, playerSegment.P2.World.Y, playerPercent)
 	maxy := screenHeight
 
 	x := 0.0
@@ -268,7 +271,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.util.Project(
 			&segment.P1,
 			(g.world.playerX*g.config.roadWidth)-x,
-			g.config.cameraHeight,
+			playerY+g.config.cameraHeight,
 			g.world.position-camzmodifier,
 			g.world.cameraDepth,
 			screenWidth,
@@ -278,7 +281,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.util.Project(
 			&segment.P2,
 			(g.world.playerX*g.config.roadWidth)-x-dx,
-			g.config.cameraHeight,
+			playerY+g.config.cameraHeight,
 			g.world.position-camzmodifier,
 			g.world.cameraDepth,
 			screenWidth,
@@ -290,6 +293,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		dx = dx + segment.Curve
 
 		if (segment.P1.Camera.Z <= g.world.cameraDepth) || // behind us
+			(segment.P2.Screen.Y >= segment.P1.Screen.Y) || // back face cull
 			(int(segment.P2.Screen.Y) >= maxy) { // clip by (already rendered) segment
 			continue
 		}
@@ -316,7 +320,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	destH := ((128 * g.world.screenScale * screenWidth) / 2) * (g.world.spriteScale * g.config.roadWidth)
 
 	destX := ((screenWidth - destW) / 2)
-	destY := (screenHeight + bounce - destH)
+	destY := ((screenHeight / 2) - (g.world.cameraDepth/g.world.playerZ)*g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent)*screenHeight/2) + bounce
 	op.GeoM.Scale(destW/128, destH/128)
 	op.GeoM.Translate(destX, destY)
 	screen.DrawImage(g.playerImage.SubImage(g.playerSprites[g.world.playerMode].Rect()).(*ebiten.Image), op)
@@ -338,7 +342,8 @@ func main() {
 	track := track.NewTrack(game.config.rumbleLength, game.config.segmentLength, game.world.playerZ, util)
 	game.util = util
 	game.road = track
-	game.world.trackLength = game.road.BuildCircleTrack()
+	//	game.world.trackLength = game.road.BuildCircleTrack()
+	game.world.trackLength = game.road.BuildHillyTrack()
 	//game.world.trackLength = game.road.BuildTrack()
 
 	if err := ebiten.RunGame(game); err != nil {
