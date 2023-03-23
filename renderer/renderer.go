@@ -59,12 +59,12 @@ func (r *Renderer) ResetDebug() {
 	r.debugImage.Clear()
 }
 
-func (r *Renderer) Background(background Background, dstImg *ebiten.Image) {
+func (r *Renderer) Background(background Background, dstImg *ebiten.Image, playerY float64) {
 
 	w, h := background.Image.Size()
 	//repeat := int(math.Ceil((float64(r.ctx.Width()) / float64(w)))) + 1
 	repeat := 3
-	r.DebugPrintAt(fmt.Sprintf("Offset: %f", background.Parts[2].Offset), 50, 150)
+	r.DebugPrintAt(fmt.Sprintf("Offset: %f YOffset: %f", background.Parts[2].Offset, playerY), 50, 150)
 	for pindex, part := range background.Parts {
 
 		bgpart := ebiten.NewImage(w*repeat, h)
@@ -73,13 +73,13 @@ func (r *Renderer) Background(background Background, dstImg *ebiten.Image) {
 		for j := 0; j < repeat; j++ {
 			for i := 0; i < repeat; i++ {
 				op := &ebiten.DrawImageOptions{}
-				op.GeoM.Translate(float64(w*i), float64(h*j))
+				op.GeoM.Translate(float64(w*i), float64((h * j)))
 				bgpart.DrawImage(part.Sprite, op)
 				ebitenutil.DebugPrintAt(bgpart, fmt.Sprintf("%d-%d", pindex, i), w*i+50, h*j+(50*pindex))
 			}
 		}
 		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(-part.Offset, 0)
+		op.GeoM.Translate(-part.Offset, playerY)
 		dstImg.DrawImage(bgpart, op)
 	}
 }

@@ -210,7 +210,7 @@ func (t *Track) BuildHillyTrack() int {
 
 func (t *Track) BuildCircleTrack() int {
 	t.Segments = make([]Segment, 0)
-	t.addCurve(t.Length["long"], -t.Curve["medium"], 0)
+	t.addCurve(t.Length["long"], -t.Curve["medium"], t.Hills["low"])
 	t.addCurve(t.Length["long"], -t.Curve["medium"], 0)
 	t.addCurve(t.Length["long"], -t.Curve["medium"], 0)
 	t.addCurve(t.Length["long"], -t.Curve["medium"], 0)

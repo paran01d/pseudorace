@@ -245,7 +245,6 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.render.ResetDebug()
-	g.render.DebugPrintAt(fmt.Sprintf("TPS: %f Speed: %f Position: %f PlayerX: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position, g.world.playerX), 50, 50)
 
 	// draw segements
 	baseSegment := g.road.FindSegment(int(g.world.position))
@@ -254,10 +253,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	playerPercent := g.util.PercentRemaining(int(g.world.position+g.world.playerZ), g.config.segmentLength)
 	playerY := g.util.Interpolate(playerSegment.P1.World.Y, playerSegment.P2.World.Y, playerPercent)
 	maxy := screenHeight
-
+	g.render.DebugPrintAt(fmt.Sprintf("TPS: %f Speed: %f Position: %f PlayerX: %f PlayerY: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position, g.world.playerX, playerY), 50, 50)
 	x := 0.0
 	dx := -(baseSegment.Curve * basePercent)
-	g.render.Background(g.background, g.bgImage)
+	g.render.Background(g.background, g.bgImage, (0.2 * playerY))
 	screen.DrawImage(g.bgImage, nil)
 
 	for n := 0; n < g.config.drawDistance; n++ {
@@ -310,11 +309,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	roadImg := g.render.Image()
 	fogop := &ebiten.DrawImageOptions{}
 	fogop.GeoM.Translate(0, screenHeight/2)
-	roadImg.DrawImage(g.fogImage, fogop)
+	//roadImg.DrawImage(g.fogImage, fogop)
 	screen.DrawImage(roadImg, nil)
 	g.render.Clear()
 
-	bounce := 1.5 * rand.Float64() * (g.world.screenScale) * float64(g.world.resolution) * []float64{-1, 1}[rand.Intn(2)]
+	bounce := 1.5 * rand.Float64() * (g.world.screenScale) * []float64{-1, 1}[rand.Intn(2)]
 	op := &ebiten.DrawImageOptions{}
 	destW := ((128 * g.world.screenScale * screenWidth) / 2) * (g.world.spriteScale * g.config.roadWidth)
 	destH := ((128 * g.world.screenScale * screenWidth) / 2) * (g.world.spriteScale * g.config.roadWidth)
@@ -342,8 +341,8 @@ func main() {
 	track := track.NewTrack(game.config.rumbleLength, game.config.segmentLength, game.world.playerZ, util)
 	game.util = util
 	game.road = track
-	//	game.world.trackLength = game.road.BuildCircleTrack()
-	game.world.trackLength = game.road.BuildHillyTrack()
+	game.world.trackLength = game.road.BuildCircleTrack()
+	// game.world.trackLength = game.road.BuildHillyTrack()
 	//game.world.trackLength = game.road.BuildTrack()
 
 	if err := ebiten.RunGame(game); err != nil {
