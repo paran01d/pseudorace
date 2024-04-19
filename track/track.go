@@ -135,6 +135,7 @@ func (t *Track) BuildTrack() int {
 	t.addStraight(0.0, 0.0)
 	t.addSCurves()
 	t.addCurve(t.Length["long"], -t.Curve["easy"], 0.0)
+	t.addDownhillToEnd(0)
 
 	// Start and Finish markers
 	t.Segments[t.FindSegment(int(t.playerZ)).Index+2].Color = t.colors["START"]
@@ -154,6 +155,7 @@ func (t *Track) BuildHillyTrack() int {
 	t.addStraight(t.Length["short"], t.Hill["high"])
 	t.addStraight(t.Length["short"], t.Hill["high"])
 	t.addStraight(t.Length["short"], t.Hill["low"])
+	t.addDownhillToEnd(150)
 
 	// Start and Finish markers
 	t.Segments[t.FindSegment(int(t.playerZ)).Index+2].Color = t.colors["START"]
@@ -165,12 +167,20 @@ func (t *Track) BuildHillyTrack() int {
 	return len(t.Segments) * t.SegmentLength
 }
 
+func (t *Track) addDownhillToEnd(num float64) {
+	if num == 0 {
+		num = 200
+	}
+	t.addRoad(num, num, num, -t.Curve["easy"], -t.lastY()/float64(t.SegmentLength))
+}
+
 func (t *Track) BuildCircleTrack() int {
 	t.Segments = make([]Segment, 0)
 	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0)
-	t.addCurve(t.Length["long"], -t.Curve["medium"], t.Hill["medium"])
+	t.addCurve(t.Length["long"], -t.Curve["medium"], -t.Hill["medium"])
 	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0)
 	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0)
+	t.addDownhillToEnd(0)
 
 	// Start and Finish markers
 	t.Segments[t.FindSegment(int(t.playerZ)).Index+2].Color = t.colors["START"]

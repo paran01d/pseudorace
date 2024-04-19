@@ -268,8 +268,8 @@ func (g *Game) Update() error {
 		g.world.speed = g.util.Accelerate(g.world.speed, g.world.offRoadDecel, dt)
 	}
 
-	g.world.playerX = g.util.Limit(g.world.playerX, -2, 2)           // dont ever let player go too far out of bounds
-	g.world.speed = g.util.Limit(g.world.speed, 0, g.world.maxSpeed) // or exceed maxSpeed
+	g.world.playerX = g.util.Limit(g.world.playerX, -2, 2)             // dont ever let player go too far out of bounds
+	g.world.speed = g.util.Limit(g.world.speed, -50, g.world.maxSpeed) // or exceed maxSpeed
 
 	return nil
 }
@@ -350,7 +350,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	roadImg := g.render.Image()
 	if g.config.drawFog {
 		fogop := &ebiten.DrawImageOptions{}
-		fogop.GeoM.Translate(0, screenHeight/2)
+		fogop.GeoM.Translate(0, maxy)
 		roadImg.DrawImage(g.fogImage, fogop)
 	}
 	if g.config.drawRoad {
@@ -393,9 +393,9 @@ func main() {
 	track := track.NewTrack(game.config.rumbleLength, game.config.segmentLength, game.world.playerZ, util)
 	game.util = util
 	game.road = track
-	game.world.trackLength = game.road.BuildCircleTrack()
+	//game.world.trackLength = game.road.BuildCircleTrack()
 	//game.world.trackLength = game.road.BuildTrack()
-	//game.world.trackLength = game.road.BuildHillyTrack()
+	game.world.trackLength = game.road.BuildHillyTrack()
 
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
