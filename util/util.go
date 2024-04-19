@@ -1,6 +1,9 @@
 package util
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 type Util struct {
 }
@@ -75,4 +78,15 @@ func (u *Util) Project(gp *Gamepoint, cameraX, cameraY, cameraZ, cameraDepth, wi
 	gp.Screen.X = math.Round((width / 2) + (gp.Screen.Scale * gp.Camera.X * width / 2))
 	gp.Screen.Y = math.Round((height / 2) - (gp.Screen.Scale * gp.Camera.Y * height / 2))
 	gp.Screen.W = math.Round((gp.Screen.Scale * roadWidth * width / 2))
+}
+
+func (u *Util) ParseHexColor(hex string) (int, int, int, int) {
+	var r, g, b, a int
+	if len(hex) == 7 {
+		fmt.Sscanf(hex, "#%02x%02x%02x", &r, &g, &b)
+		a = 255
+	} else if len(hex) == 9 {
+		fmt.Sscanf(hex, "#%02x%02x%02x%02x", &r, &g, &b, &a)
+	}
+	return r, g, b, a
 }

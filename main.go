@@ -128,7 +128,7 @@ func (g *Game) Initialize() {
 	g.world.spriteScale = 0.3 * (1 / 128.00)
 	g.world.screenScale = g.world.cameraDepth / g.world.playerZ
 
-	g.render = renderer.NewRenderer(1024, 768)
+	g.render = renderer.NewRenderer(1024, 768, g.util)
 
 	// Load sprites
 	err, backgroundImage, backgroundSprites := g.loadSpriteSheet("images/background.yml")
@@ -294,7 +294,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	x := 0.0
 	dx := -(baseSegment.Curve * basePercent)
 	if g.config.drawBackground {
-		g.render.Background(g.background, g.bgImage)
+		g.render.Background(g.background, g.bgImage, playerY)
 		screen.DrawImage(g.bgImage, nil)
 	}
 
@@ -367,7 +367,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	destX := ((screenWidth - destW) / 2)
 	//destY := (screenHeight + bounce - destH)
-	destY := (((screenHeight - destH) / 2) - (g.world.cameraDepth/g.world.playerZ*g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent))*((screenHeight-destH)/2)) + bounce
+	destY := ((screenHeight - destH) - (g.world.cameraDepth/g.world.playerZ*g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent))*((screenHeight-destH)/2)) + bounce
 	op.GeoM.Scale(destW/128, destH/128)
 	op.GeoM.Translate(destX, destY)
 	if g.config.drawPlayer {
@@ -393,9 +393,9 @@ func main() {
 	track := track.NewTrack(game.config.rumbleLength, game.config.segmentLength, game.world.playerZ, util)
 	game.util = util
 	game.road = track
-	//	game.world.trackLength = game.road.BuildCircleTrack()
+	game.world.trackLength = game.road.BuildCircleTrack()
 	//game.world.trackLength = game.road.BuildTrack()
-	game.world.trackLength = game.road.BuildHillyTrack()
+	//game.world.trackLength = game.road.BuildHillyTrack()
 
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)

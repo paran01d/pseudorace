@@ -2,17 +2,24 @@ package renderer
 
 import (
 	"fmt"
+	"image"
+	"image/color"
 	"math"
 
-	"github.com/fogleman/gg"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/paran01d/pseudorace/util"
 )
 
+var ()
+
 type Renderer struct {
-	ctx        *gg.Context
-	img        *ebiten.Image
-	debugImage *ebiten.Image
+	img           *ebiten.Image
+	debugImage    *ebiten.Image
+	util          *util.Util
+	whiteImage    *ebiten.Image
+	whiteSubImage *ebiten.Image
 }
 
 type SegmentColor struct {
@@ -35,16 +42,26 @@ type Background struct {
 	Parts []*BackgroundPart
 }
 
-func NewRenderer(width, height int) *Renderer {
+func NewRenderer(width, height int, util *util.Util) *Renderer {
+	whiteImage := ebiten.NewImage(3, 3)
+
+	// whiteSubImage is an internal sub image of whiteImage.
+	// Use whiteSubImage at DrawTriangles instead of whiteImage in order to avoid bleeding edges.
+	whiteSubImage := whiteImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
+
+	whiteImage.Fill(color.White)
+
 	return &Renderer{
-		ctx:        gg.NewContext(width, height),
-		debugImage: ebiten.NewImage(width, height),
+		debugImage:    ebiten.NewImage(width, height),
+		img:           ebiten.NewImage(width, height),
+		util:          util,
+		whiteImage:    whiteImage,
+		whiteSubImage: whiteSubImage,
 	}
 }
 
 func (r *Renderer) Clear() {
 	r.img.Clear()
-	r.ctx.ClearPath()
 }
 
 func (r *Renderer) DebugPrintAt(msg string, xpos, ypos int) {
@@ -59,12 +76,12 @@ func (r *Renderer) ResetDebug() {
 	r.debugImage.Clear()
 }
 
-func (r *Renderer) Background(background Background, dstImg *ebiten.Image) {
+func (r *Renderer) Background(background Background, dstImg *ebiten.Image, playerY float64) {
 
 	w, h := background.Image.Size()
 	//repeat := int(math.Ceil((float64(r.ctx.Width()) / float64(w)))) + 1
 	repeat := 3
-	r.DebugPrintAt(fmt.Sprintf("Offset: %f", background.Parts[2].Offset), 50, 150)
+	r.DebugPrintAt(fmt.Sprintf("Offset: %f YOffset: %f", background.Parts[2].Offset, playerY), 50, 150)
 	for pindex, part := range background.Parts {
 
 		bgpart := ebiten.NewImage(w*repeat, h)
@@ -73,13 +90,13 @@ func (r *Renderer) Background(background Background, dstImg *ebiten.Image) {
 		for j := 0; j < repeat; j++ {
 			for i := 0; i < repeat; i++ {
 				op := &ebiten.DrawImageOptions{}
-				op.GeoM.Translate(float64(w*i), float64(h*j))
+				op.GeoM.Translate(float64(w*i), float64((h * (j * int(playerY)))))
 				bgpart.DrawImage(part.Sprite, op)
 				ebitenutil.DebugPrintAt(bgpart, fmt.Sprintf("%d-%d", pindex, i), w*i+50, h*j+(50*pindex))
 			}
 		}
 		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(-part.Offset, 0)
+		op.GeoM.Translate(-part.Offset, 0.0)
 		dstImg.DrawImage(bgpart, op)
 	}
 }
@@ -91,10 +108,12 @@ func (r *Renderer) Segment(width, lanes int, x1, y1, w1, x2, y2, w2 float64, col
 	l2 := r.laneMakerWidth(w2, float64(lanes))
 
 	// Grass
-	r.ctx.SetHexColor(color.Grass)
-	r.ctx.DrawRectangle(0, y2, float64(width), y1-y2)
-	r.ctx.Fill()
+	// mx1 = 0, my1 = y2
+	// mx2 = width, my2 = y2
+	// mx3 = width, my3 = y2+(y1-y2)
+	// mx4 = 0, my4 = y2+(y1-y2)
 
+	r.Polygon(0, y2, float64(width), y2, float64(width), y2+(y1-y2), 0, y2+(y1-y2), color.Grass)
 	r.Polygon(x1-w1-r1, y1, x1-w1, y1, x2-w2, y2, x2-w2-r2, y2, color.Rumble)
 	r.Polygon(x1+w1+r1, y1, x1+w1, y1, x2+w2, y2, x2+w2+r2, y2, color.Rumble)
 	r.Polygon(x1-w1, y1, x1+w1, y1, x2+w2, y2, x2-w2, y2, color.Road)
@@ -122,19 +141,31 @@ func (r *Renderer) Segment(width, lanes int, x1, y1, w1, x2, y2, w2 float64, col
 }
 
 func (r *Renderer) Image() *ebiten.Image {
-	r.img = ebiten.NewImageFromImage(r.ctx.Image())
 	return r.img
 }
 
-func (r *Renderer) Polygon(x1 float64, y1 float64, x2 float64, y2 float64, x3 float64, y3 float64, x4 float64, y4 float64, color string) {
-	r.ctx.MoveTo(x1, y1)
-	r.ctx.LineTo(x2, y2)
-	r.ctx.LineTo(x3, y3)
-	r.ctx.LineTo(x4, y4)
-	r.ctx.SetHexColor(color)
-	r.ctx.FillPreserve()
-	r.ctx.Stroke()
-	r.ctx.ClearPath()
+func (r *Renderer) Polygon(x1, y1, x2, y2, x3, y3, x4, y4 float64, color string) {
+	path := vector.Path{}
+	path.MoveTo(float32(x1), float32(y1))
+	path.LineTo(float32(x2), float32(y2))
+	path.LineTo(float32(x3), float32(y3))
+	path.LineTo(float32(x4), float32(y4))
+	path.Close()
+
+	red, green, blue, _ := r.util.ParseHexColor(color)
+
+	vs, is := path.AppendVerticesAndIndicesForFilling(nil, nil)
+	for i := range vs {
+		vs[i].ColorR = float32(red) / float32(0xff)
+		vs[i].ColorG = float32(green) / float32(0xff)
+		vs[i].ColorB = float32(blue) / float32(0xff)
+		vs[i].ColorA = 1
+	}
+
+	op := &ebiten.DrawTrianglesOptions{}
+	op.AntiAlias = true
+
+	r.img.DrawTriangles(vs, is, r.whiteSubImage, op)
 }
 
 func (r *Renderer) rumbleWidth(projectedRoadWidth float64, lanes float64) float64 {
