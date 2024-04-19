@@ -250,6 +250,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// draw segements
 	baseSegment := g.road.FindSegment(int(g.world.position))
 	basePercent := g.util.PercentRemaining(int(g.world.position), g.config.segmentLength)
+
+	playerSegment := g.road.FindSegment(int(g.world.position + g.world.playerZ))
+	playerPercent := g.util.PercentRemaining(int(g.world.position+g.world.playerZ), g.config.segmentLength)
+	playerY := g.util.Interpolate(playerSegment.P1.World.Y, playerSegment.P2.World.Y, playerPercent)
+
 	maxy := screenHeight
 
 	x := 0.0
@@ -268,7 +273,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.util.Project(
 			&segment.P1,
 			(g.world.playerX*g.config.roadWidth)-x,
-			g.config.cameraHeight,
+			playerY+g.config.cameraHeight,
 			g.world.position-camzmodifier,
 			g.world.cameraDepth,
 			screenWidth,
@@ -278,7 +283,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.util.Project(
 			&segment.P2,
 			(g.world.playerX*g.config.roadWidth)-x-dx,
-			g.config.cameraHeight,
+			playerY+g.config.cameraHeight,
 			g.world.position-camzmodifier,
 			g.world.cameraDepth,
 			screenWidth,
@@ -304,19 +309,22 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			segment.Color)
 	}
 	roadImg := g.render.Image()
-	fogop := &ebiten.DrawImageOptions{}
-	fogop.GeoM.Translate(0, screenHeight/2)
-	roadImg.DrawImage(g.fogImage, fogop)
+	// fogop := &ebiten.DrawImageOptions{}
+	// fogop.GeoM.Translate(0, screenHeight/2)
+	// roadImg.DrawImage(g.fogImage, fogop)
 	screen.DrawImage(roadImg, nil)
 	g.render.Clear()
 
-	bounce := 1.5 * rand.Float64() * (g.world.screenScale) * float64(g.world.resolution) * []float64{-1, 1}[rand.Intn(2)]
+	speedPercent := g.world.speed / g.world.maxSpeed
+
+	bounce := (1.5 * rand.Float64() * speedPercent * float64(g.world.resolution)) * []float64{-1, 1}[rand.Intn(2)]
 	op := &ebiten.DrawImageOptions{}
 	destW := ((128 * g.world.screenScale * screenWidth) / 2) * (g.world.spriteScale * g.config.roadWidth)
 	destH := ((128 * g.world.screenScale * screenWidth) / 2) * (g.world.spriteScale * g.config.roadWidth)
 
 	destX := ((screenWidth - destW) / 2)
-	destY := (screenHeight + bounce - destH)
+	//destY := (screenHeight + bounce - destH)
+	destY := (((screenHeight - destH) / 2) - (g.world.cameraDepth/g.world.playerZ*g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent))*((screenHeight-destH)/2)) + bounce
 	op.GeoM.Scale(destW/128, destH/128)
 	op.GeoM.Translate(destX, destY)
 	screen.DrawImage(g.playerImage.SubImage(g.playerSprites[g.world.playerMode].Rect()).(*ebiten.Image), op)
@@ -338,8 +346,9 @@ func main() {
 	track := track.NewTrack(game.config.rumbleLength, game.config.segmentLength, game.world.playerZ, util)
 	game.util = util
 	game.road = track
-	game.world.trackLength = game.road.BuildCircleTrack()
+	//	game.world.trackLength = game.road.BuildCircleTrack()
 	//game.world.trackLength = game.road.BuildTrack()
+	game.world.trackLength = game.road.BuildHillyTrack()
 
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
