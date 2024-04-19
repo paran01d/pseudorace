@@ -90,7 +90,7 @@ func (r *Renderer) Background(background Background, dstImg *ebiten.Image, playe
 		for j := 0; j < repeat; j++ {
 			for i := 0; i < repeat; i++ {
 				op := &ebiten.DrawImageOptions{}
-				op.GeoM.Translate(float64(w*i), float64((h * (j * int(playerY)))))
+				op.GeoM.Translate(float64(w*i), float64((h * j)))
 				bgpart.DrawImage(part.Sprite, op)
 				ebitenutil.DebugPrintAt(bgpart, fmt.Sprintf("%d-%d", pindex, i), w*i+50, h*j+(50*pindex))
 			}
