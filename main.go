@@ -12,6 +12,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/paran01d/pseudorace/renderer"
 	"github.com/paran01d/pseudorace/spritesheet"
 	"github.com/paran01d/pseudorace/track"
@@ -24,15 +25,20 @@ const (
 )
 
 type gameConfig struct {
-	roadWidth     float64
-	rumbleLength  int
-	segmentLength int
-	lanes         int
-	fieldOfView   float64
-	cameraHeight  float64
-	drawDistance  int
-	fogDensity    int
-	centrifugal   float64
+	roadWidth      float64
+	rumbleLength   int
+	segmentLength  int
+	lanes          int
+	fieldOfView    float64
+	cameraHeight   float64
+	drawDistance   int
+	fogDensity     int
+	centrifugal    float64
+	drawBackground bool
+	drawFog        bool
+	drawPlayer     bool
+	drawDebug      bool
+	drawRoad       bool
 }
 
 type worldValues struct {
@@ -86,15 +92,20 @@ func (g *Game) Initialize() {
 
 	// Set config
 	g.config = gameConfig{
-		roadWidth:     3000,
-		rumbleLength:  3,
-		segmentLength: 500,
-		lanes:         3,
-		fieldOfView:   100,
-		cameraHeight:  2000,
-		drawDistance:  300,
-		fogDensity:    5,
-		centrifugal:   0.3,
+		roadWidth:      3000,
+		rumbleLength:   3,
+		segmentLength:  500,
+		lanes:          3,
+		fieldOfView:    100,
+		cameraHeight:   2000,
+		drawDistance:   300,
+		fogDensity:     5,
+		centrifugal:    0.3,
+		drawBackground: true,
+		drawPlayer:     true,
+		drawFog:        true,
+		drawRoad:       true,
+		drawDebug:      true,
 	}
 
 	// Setup the world
@@ -208,6 +219,26 @@ func (g *Game) Update() error {
 		}
 	}
 
+	if inpututil.KeyPressDuration(ebiten.KeyD) == 1 {
+		g.config.drawDebug = !g.config.drawDebug
+	}
+
+	if inpututil.KeyPressDuration(ebiten.KeyF) == 1 {
+		g.config.drawFog = !g.config.drawFog
+	}
+
+	if inpututil.KeyPressDuration(ebiten.KeyR) == 1 {
+		g.config.drawRoad = !g.config.drawRoad
+	}
+
+	if inpututil.KeyPressDuration(ebiten.KeyB) == 1 {
+		g.config.drawBackground = !g.config.drawBackground
+	}
+
+	if inpututil.KeyPressDuration(ebiten.KeyP) == 1 {
+		g.config.drawPlayer = !g.config.drawPlayer
+	}
+
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
 		return errors.New("Quit pressed")
 	}
@@ -244,8 +275,11 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	g.render.ResetDebug()
-	g.render.DebugPrintAt(fmt.Sprintf("TPS: %f Speed: %f Position: %f PlayerX: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position, g.world.playerX), 50, 50)
+	screen.Fill(color.White)
+	if g.config.drawDebug {
+		g.render.ResetDebug()
+		g.render.DebugPrintAt(fmt.Sprintf("TPS: %f Speed: %f Position: %f PlayerX: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position, g.world.playerX), 50, 50)
+	}
 
 	// draw segements
 	baseSegment := g.road.FindSegment(int(g.world.position))
@@ -255,14 +289,16 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	playerPercent := g.util.PercentRemaining(int(g.world.position+g.world.playerZ), g.config.segmentLength)
 	playerY := g.util.Interpolate(playerSegment.P1.World.Y, playerSegment.P2.World.Y, playerPercent)
 
-	maxy := screenHeight
+	maxy := float64(screenHeight)
 
 	x := 0.0
 	dx := -(baseSegment.Curve * basePercent)
-	g.render.Background(g.background, g.bgImage)
-	screen.DrawImage(g.bgImage, nil)
+	if g.config.drawBackground {
+		g.render.Background(g.background, g.bgImage)
+		screen.DrawImage(g.bgImage, nil)
+	}
 
-	for n := 0; n < g.config.drawDistance; n++ {
+	for n := 0; n <= g.config.drawDistance; n++ {
 		segment := g.road.Segments[(baseSegment.Index+n)%len(g.road.Segments)]
 		segment.Looped = segment.Index < baseSegment.Index
 
@@ -295,7 +331,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		dx = dx + segment.Curve
 
 		if (segment.P1.Camera.Z <= g.world.cameraDepth) || // behind us
-			(int(segment.P2.Screen.Y) >= maxy) { // clip by (already rendered) segment
+			(segment.P2.Screen.Y >= segment.P1.Screen.Y) || // back face cull
+			(segment.P2.Screen.Y >= maxy) { // clip by (already rendered) segment
 			continue
 		}
 
@@ -307,12 +344,18 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			segment.P2.Screen.Y,
 			segment.P2.Screen.W,
 			segment.Color)
+
+		maxy = segment.P1.Screen.Y
 	}
 	roadImg := g.render.Image()
-	// fogop := &ebiten.DrawImageOptions{}
-	// fogop.GeoM.Translate(0, screenHeight/2)
-	// roadImg.DrawImage(g.fogImage, fogop)
-	screen.DrawImage(roadImg, nil)
+	if g.config.drawFog {
+		fogop := &ebiten.DrawImageOptions{}
+		fogop.GeoM.Translate(0, screenHeight/2)
+		roadImg.DrawImage(g.fogImage, fogop)
+	}
+	if g.config.drawRoad {
+		screen.DrawImage(roadImg, nil)
+	}
 	g.render.Clear()
 
 	speedPercent := g.world.speed / g.world.maxSpeed
@@ -327,8 +370,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	destY := (((screenHeight - destH) / 2) - (g.world.cameraDepth/g.world.playerZ*g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent))*((screenHeight-destH)/2)) + bounce
 	op.GeoM.Scale(destW/128, destH/128)
 	op.GeoM.Translate(destX, destY)
-	screen.DrawImage(g.playerImage.SubImage(g.playerSprites[g.world.playerMode].Rect()).(*ebiten.Image), op)
-	screen.DrawImage(g.render.DebugImage(), nil)
+	if g.config.drawPlayer {
+		screen.DrawImage(g.playerImage.SubImage(g.playerSprites[g.world.playerMode].Rect()).(*ebiten.Image), op)
+	}
+	if g.config.drawDebug {
+		screen.DrawImage(g.render.DebugImage(), nil)
+	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
