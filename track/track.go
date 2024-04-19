@@ -149,18 +149,26 @@ func (t *Track) BuildTrack() int {
 func (t *Track) BuildHillyTrack() int {
 	t.Segments = make([]Segment, 0)
 
+	t.addStraight(t.Length["short"], t.Hill["high"]*2)
 	t.addStraight(t.Length["short"], t.Hill["high"])
 	t.addStraight(t.Length["short"], t.Hill["high"])
 	t.addStraight(t.Length["short"], t.Hill["high"])
-	t.addStraight(t.Length["short"], t.Hill["high"])
+	t.addStraight(t.Length["short"], t.Hill["low"])
+
+	// Start and Finish markers
+	t.Segments[t.FindSegment(int(t.playerZ)).Index+2].Color = t.colors["START"]
+	t.Segments[t.FindSegment(int(t.playerZ)).Index+3].Color = t.colors["START"]
+	for n := 0; n < t.RumbleLength; n++ {
+		t.Segments[len(t.Segments)-1-n].Color = t.colors["FINISH"]
+	}
 
 	return len(t.Segments) * t.SegmentLength
 }
 
 func (t *Track) BuildCircleTrack() int {
 	t.Segments = make([]Segment, 0)
-	t.addCurve(t.Length["long"], -t.Curve["medium"], t.Hill["medium"])
 	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0)
+	t.addCurve(t.Length["long"], -t.Curve["medium"], t.Hill["medium"])
 	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0)
 	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0)
 
