@@ -92,13 +92,13 @@ func (g *Game) Initialize() {
 
 	// Set config
 	g.config = gameConfig{
-		roadWidth:      3000,
+		roadWidth:      4000,
 		rumbleLength:   3,
 		segmentLength:  500,
 		lanes:          3,
-		fieldOfView:    100,
-		cameraHeight:   2000,
-		drawDistance:   300,
+		fieldOfView:    95,
+		cameraHeight:   2200,
+		drawDistance:   400,
 		fogDensity:     5,
 		centrifugal:    0.3,
 		drawBackground: true,
@@ -112,7 +112,7 @@ func (g *Game) Initialize() {
 	g.world = worldValues{
 		resolution:  0,
 		trackLength: 0,
-		cameraDepth: 1 / math.Tan(((g.config.fieldOfView/2)*math.Pi)/180),
+		cameraDepth: 0.4 / math.Tan(((g.config.fieldOfView/2)*math.Pi)/180),
 		playerX:     0,
 		playerMode:  "straight",
 		position:    0,
