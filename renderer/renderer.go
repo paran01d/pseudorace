@@ -20,6 +20,7 @@ type Renderer struct {
 	util          *util.Util
 	whiteImage    *ebiten.Image
 	whiteSubImage *ebiten.Image
+	bgpart        *ebiten.Image
 }
 
 type SegmentColor struct {
@@ -49,7 +50,7 @@ func NewRenderer(width, height int, util *util.Util) *Renderer {
 	// Use whiteSubImage at DrawTriangles instead of whiteImage in order to avoid bleeding edges.
 	whiteSubImage := whiteImage.SubImage(image.Rect(1, 1, 2, 2)).(*ebiten.Image)
 
-	whiteImage.Fill(color.White)
+	whiteImage.Fill(color.White) //RGBA{0, 78, 8, 0})
 
 	return &Renderer{
 		debugImage:    ebiten.NewImage(width, height),
@@ -76,15 +77,16 @@ func (r *Renderer) ResetDebug() {
 	r.debugImage.Clear()
 }
 
+func (r *Renderer) SetupBgPart(background Background) {
+	w, h := background.Image.Size()
+	r.bgpart = ebiten.NewImage(w*3, h)
+}
+
 func (r *Renderer) Background(background Background, dstImg *ebiten.Image, playerY float64) {
 
 	w, h := background.Image.Size()
-	//repeat := int(math.Ceil((float64(r.ctx.Width()) / float64(w)))) + 1
 	repeat := 3
-	r.DebugPrintAt(fmt.Sprintf("Offset: %f YOffset: %f", background.Parts[2].Offset, playerY), 50, 150)
 	for pindex, part := range background.Parts {
-
-		bgpart := ebiten.NewImage(w*repeat, h)
 
 		// Draw bgImage on the screen repeatedly.
 		for j := 0; j < repeat; j++ {
@@ -93,11 +95,13 @@ func (r *Renderer) Background(background Background, dstImg *ebiten.Image, playe
 				op.GeoM.Translate(float64(w*i), float64((h * j)))
 				bgpart.DrawImage(part.Sprite, op)
 				ebitenutil.DebugPrintAt(bgpart, fmt.Sprintf("%d-%d", pindex, i), w*i+50, h*j+(50*pindex))
+				r.bgpart.DrawImage(part.Sprite, op)
+				ebitenutil.DebugPrintAt(r.bgpart, fmt.Sprintf("%d-%d-%f", pindex, i, part.Offset), w*i+50, h*j+(50*pindex))
 			}
 		}
 		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(-part.Offset, 0.0)
-		dstImg.DrawImage(bgpart, op)
+		dstImg.DrawImage(r.bgpart, op)
+		r.bgpart.Clear()
 	}
 }
 
