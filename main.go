@@ -144,6 +144,8 @@ func (g *Game) Initialize() {
 		},
 	}
 
+	g.render.SetupBgPart(g.background)
+
 	err, playerImage, playerSprites := g.loadSpriteSheet("images/player.yml")
 	if err != nil {
 		log.Fatal(err)
@@ -276,10 +278,6 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.White)
-	if g.config.drawDebug {
-		g.render.ResetDebug()
-		g.render.DebugPrintAt(fmt.Sprintf("TPS: %f Speed: %f Position: %f PlayerX: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position, g.world.playerX), 50, 50)
-	}
 
 	// draw segements
 	baseSegment := g.road.FindSegment(int(g.world.position))
@@ -290,7 +288,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	playerY := g.util.Interpolate(playerSegment.P1.World.Y, playerSegment.P2.World.Y, playerPercent)
 
 	maxy := float64(screenHeight)
-
 	x := 0.0
 	dx := -(baseSegment.Curve * basePercent)
 	if g.config.drawBackground {
@@ -347,10 +344,15 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 		maxy = segment.P1.Screen.Y
 	}
+	if g.config.drawDebug {
+		g.render.ResetDebug()
+		g.render.DebugPrintAt(fmt.Sprintf("TPS: %f Speed: %f Position: %f PlayerX: %f PlayerY: %f maxy: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position, g.world.playerX, playerY, maxy), 50, 50)
+	}
+
 	roadImg := g.render.Image()
 	if g.config.drawFog {
 		fogop := &ebiten.DrawImageOptions{}
-		fogop.GeoM.Translate(0, maxy)
+		fogop.GeoM.Translate(0, maxy-5)
 		roadImg.DrawImage(g.fogImage, fogop)
 	}
 	if g.config.drawRoad {
@@ -358,16 +360,17 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	g.render.Clear()
 
-	speedPercent := g.world.speed / g.world.maxSpeed
+	//speedPercent := g.world.speed / g.world.maxSpeed
 
-	bounce := (1.5 * rand.Float64() * speedPercent * float64(g.world.resolution)) * []float64{-1, 1}[rand.Intn(2)]
+	//bounce := (1.5 * rand.Float64() * speedPercent * float64(g.world.resolution)) * []float64{-1, 1}[rand.Intn(2)]
 	op := &ebiten.DrawImageOptions{}
 	destW := ((128 * g.world.screenScale * screenWidth) / 2) * (g.world.spriteScale * g.config.roadWidth)
-	destH := ((128 * g.world.screenScale * screenWidth) / 2) * (g.world.spriteScale * g.config.roadWidth)
+	destH := ((128 * g.world.screenScale * screenHeight) / 2) * (g.world.spriteScale * g.config.roadWidth)
 
 	destX := ((screenWidth - destW) / 2)
 	//destY := (screenHeight + bounce - destH)
-	destY := ((screenHeight - destH) - (g.world.cameraDepth/g.world.playerZ*g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent))*((screenHeight-destH)/2)) + bounce
+	//destY := (screenHeight - destH) - (g.world.cameraDepth/g.world.playerZ*g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent))*((screenHeight-destH)/2) // + bounce
+	destY := float64(screenHeight-destH) - (g.world.cameraDepth / g.world.playerZ * g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent)) + 10
 	op.GeoM.Scale(destW/128, destH/128)
 	op.GeoM.Translate(destX, destY)
 	if g.config.drawPlayer {
