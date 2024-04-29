@@ -100,6 +100,7 @@ func (r *Renderer) Background(background Background, dstImg *ebiten.Image, playe
 			}
 		}
 		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(-part.Offset, -10.0*part.Speed*(playerY*0.0001))
 		dstImg.DrawImage(r.bgpart, op)
 		r.bgpart.Clear()
 	}
