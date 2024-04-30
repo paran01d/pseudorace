@@ -116,10 +116,13 @@ func (r *Renderer) Segment(width, lanes int, x1, y1, w1, x2, y2, w2 float64, col
 	// mx3 = width, my3 = y2+(y1-y2)
 	// mx4 = 0, my4 = y2+(y1-y2)
 
-	r.Polygon(0, y2, float64(width), y2, float64(width), y2+(y1-y2), 0, y2+(y1-y2), color.Grass)
+	// First side of road
+	r.Polygon(0, y2, x1-w2, y2, x1-w1, y2+(y1-y2), 0, y2+(y1-y2), color.Grass)
 	r.Polygon(x1-w1-r1, y1, x1-w1, y1, x2-w2, y2, x2-w2-r2, y2, color.Rumble)
 	r.Polygon(x1+w1+r1, y1, x1+w1, y1, x2+w2, y2, x2+w2+r2, y2, color.Rumble)
 	r.Polygon(x1-w1, y1, x1+w1, y1, x2+w2, y2, x2-w2, y2, color.Road)
+	// Second side of road
+	r.Polygon(float64(width), y2, x2+w2+r2, y2, x1+w1+r1, y1, float64(width), y2+(y1-y2), color.Grass)
 
 	if color.Lane != "" {
 		lanew1 := (w1 * 2) / float64(lanes)
