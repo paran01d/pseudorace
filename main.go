@@ -85,7 +85,7 @@ func (g *Game) Initialize() {
 
 	g.colors = map[string]renderer.SegmentColor{
 		"LIGHT":  {Road: "#6B6B6B", Grass: "#10AA10", Rumble: "#555555", Lane: "#CCCCCC"},
-		"DARK":   {Road: "#696969", Grass: "#009A00", Rumble: "#BBBBBB"},
+		"DARK":   {Road: "#696969", Grass: "#009A00", Rumble: "#BE1B08"},
 		"START":  {Road: "#fff", Grass: "#fff", Rumble: "#fff"},
 		"FINISH": {Road: "#000", Grass: "#000", Rumble: "#000"},
 	}
@@ -270,8 +270,8 @@ func (g *Game) Update() error {
 		g.world.speed = g.util.Accelerate(g.world.speed, g.world.offRoadDecel, dt)
 	}
 
-	g.world.playerX = g.util.Limit(g.world.playerX, -2, 2)             // dont ever let player go too far out of bounds
-	g.world.speed = g.util.Limit(g.world.speed, -50, g.world.maxSpeed) // or exceed maxSpeed
+	g.world.playerX = g.util.Limit(g.world.playerX, -2, 2)           // dont ever let player go too far out of bounds
+	g.world.speed = g.util.Limit(g.world.speed, 0, g.world.maxSpeed) // or exceed maxSpeed
 
 	return nil
 }
