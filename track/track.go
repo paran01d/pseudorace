@@ -1,6 +1,8 @@
 package track
 
 import (
+	"log"
+
 	"github.com/paran01d/pseudorace/renderer"
 	"github.com/paran01d/pseudorace/util"
 )
@@ -68,15 +70,10 @@ func (t *Track) addSegment(curve float64, y float64, tunnelStart, tunnelEnd, inT
 		Curve: curve,
 	}
 
-	if tunnelStart {
-		segment.TunnelStart = true
-	}
-	if tunnelEnd {
-		segment.TunnelEnd = true
-	}
-	if inTunnel {
-		segment.InTunnel = true
-	}
+	segment.TunnelStart = tunnelStart
+	segment.TunnelEnd = tunnelEnd
+	segment.InTunnel = inTunnel
+	log.Printf("Segment: %+v", segment)
 
 	t.Segments = append(t.Segments, segment)
 
@@ -93,14 +90,20 @@ func (t *Track) addRoad(enter, hold, leave, curve, y float64, tunnelStart, tunne
 	startY := t.lastY()
 	endY := startY + (y * float64(t.SegmentLength))
 	total := enter + hold + leave
+	setStartTunnel := false
 	for n := 0.0; n < enter; n++ {
-		t.addSegment(t.util.EaseIn(0.0, curve, n/enter), t.util.EaseInOut(startY, endY, n/total), tunnelStart, tunnelEnd, inTunnel)
+		myTunnelStart := false
+		if tunnelStart && !setStartTunnel {
+			setStartTunnel = true
+			myTunnelStart = true
+		}
+		t.addSegment(t.util.EaseIn(0.0, curve, n/enter), t.util.EaseInOut(startY, endY, n/total), myTunnelStart, false, inTunnel)
 	}
 	for n := 0.0; n < hold; n++ {
-		t.addSegment(curve, t.util.EaseInOut(startY, endY, (enter+n)/total), tunnelStart, tunnelEnd, inTunnel)
+		t.addSegment(curve, t.util.EaseInOut(startY, endY, (enter+n)/total), false, false, inTunnel)
 	}
 	for n := 0.0; n < leave; n++ {
-		t.addSegment(t.util.EaseInOut(curve, 0.0, n/leave), t.util.EaseInOut(startY, endY, (enter+hold+n)/total), tunnelStart, tunnelEnd, inTunnel)
+		t.addSegment(t.util.EaseInOut(curve, 0.0, n/leave), t.util.EaseInOut(startY, endY, (enter+hold+n)/total), false, false, inTunnel)
 	}
 }
 
@@ -108,12 +111,12 @@ func (t *Track) addTunnel(num float64) {
 	if num == 0 {
 		num = t.Length["medium"]
 	}
-	t.addRoad(num, num, num, 0.0, 0.0, true, false, false)
+	t.addRoad(num, num, num, 0.0, 0.0, true, false, true)
 	t.addRoad(num, num, num, 0.0, 0.0, false, false, true)
 	t.addRoad(num, num, num, 0.0, 0.0, false, false, true)
 	t.addRoad(num, num, num, 0.0, 0.0, false, false, true)
 	t.addRoad(num, num, num, 0.0, 0.0, false, false, true)
-	t.addRoad(num, num, num, 0.0, 0.0, false, true, false)
+	t.addRoad(num, num, num, 0.0, 0.0, false, true, true)
 }
 
 func (t *Track) addStraight(num, hill float64) {

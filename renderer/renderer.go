@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"log"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -120,25 +119,33 @@ func (r *Renderer) Segment(width, height, lanes int, x1, y1, cy1, w1, x2, y2, cy
 
 	// First side of road
 	if inTunnel {
-		r.Polygon(x1-w1, y1, x2-w2, y2, x2-w2, cy2, x1-w1, cy1, scolor.Tunnel)
-	} else {
-		r.Polygon(0, y2, x1-w2, y2, x1-w1, y2+(y1-y2), 0, y2+(y1-y2), scolor.Grass)
-	}
-
-	r.Polygon(x1-w1-r1, y1, x1-w1, y1, x2-w2, y2, x2-w2-r2, y2, scolor.Rumble)
-	r.Polygon(x1+w1+r1, y1, x1+w1, y1, x2+w2, y2, x2+w2+r2, y2, scolor.Rumble)
-	r.Polygon(x1-w1, y1, x1+w1, y1, x2+w2, y2, x2-w2, y2, scolor.Road)
-	// Cieling if in tunnel
-	if inTunnel {
-		log.Printf("Color: %+v", scolor)
+		if tunnelStart {
+			// Draw tunnel entrance wall
+			r.Polygon(0, y1, x1-w1, y1, x1-w1, cy1-20, 0, cy1-20, scolor.Tunnel)
+		}
+		// Left Wall
+		r.Polygon(x1-w1, y1, x1-w1, cy1, x2-w2, cy2, x2-w2, y2, scolor.Tunnel)
+		if tunnelStart {
+			// Draw tunnel entrance cieling
+			r.Polygon(x1-w1, cy1, x1-w1, cy1-20, x1+w1, cy1-20, x1+w1, cy1, scolor.Tunnel)
+		}
+		// cieling
 		r.Polygon(x1-w1, cy1, x1+w1, cy1, x2+w2, cy2, x2-w2, cy2, scolor.Tunnel)
-	}
-	// Second side of road
-	if inTunnel {
+		// Road
+		r.Polygon(x1-w1, y1, x1+w1, y1, x2+w2, y2, x2-w2, y2, scolor.Road)
+		// Right Wall
 		//r.Polygon(float64(width), y2, x2+w2+r2, y2, x1+w1+r1, y1-float64(height), float64(width), y2-(float64(height)), scolor.Tunnel)
 	} else {
+		// Grass
+		r.Polygon(0, y2, x1-w2, y2, x1-w1, y2+(y1-y2), 0, y2+(y1-y2), scolor.Grass)
+		// Road
+		r.Polygon(x1-w1-r1, y1, x1-w1, y1, x2-w2, y2, x2-w2-r2, y2, scolor.Rumble)
+		r.Polygon(x1-w1, y1, x1+w1, y1, x2+w2, y2, x2-w2, y2, scolor.Road)
+		r.Polygon(x1+w1+r1, y1, x1+w1, y1, x2+w2, y2, x2+w2+r2, y2, scolor.Rumble)
+		// Grass
 		r.Polygon(float64(width), y2, x2+w2+r2, y2, x1+w1+r1, y1, float64(width), y2+(y1-y2), scolor.Grass)
 	}
+
 	if scolor.Lane != "" {
 		lanew1 := (w1 * 2) / float64(lanes)
 		lanew2 := (w2 * 2) / float64(lanes)
@@ -174,9 +181,6 @@ func (r *Renderer) Polygon(x1, y1, x2, y2, x3, y3, x4, y4 float64, color string)
 
 	red, green, blue, _ := r.util.ParseHexColor(color)
 
-	if color == "#808080" || color == "#373737" {
-		log.Printf("Color: %d %d %d", red, green, blue)
-	}
 	vs, is := path.AppendVerticesAndIndicesForFilling(nil, nil)
 	for i := range vs {
 		vs[i].ColorR = float32(red) / float32(0xff)
