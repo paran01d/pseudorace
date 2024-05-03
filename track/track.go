@@ -18,25 +18,23 @@ type Track struct {
 }
 
 type Segment struct {
-	Index  int
-	P1     util.Gamepoint
-	P2     util.Gamepoint
-	Curve  float64
-	Color  renderer.SegmentColor
-	Looped bool
+	Index       int
+	P1          util.Gamepoint
+	P2          util.Gamepoint
+	Curve       float64
+	Color       renderer.SegmentColor
+	Looped      bool
+	TunnelStart bool
+	TunnelEnd   bool
+	InTunnel    bool
 }
 
-func NewTrack(rumbleLength int, segmentLength int, playerZ float64, util *util.Util) *Track {
+func NewTrack(rumbleLength int, segmentLength int, playerZ float64, util *util.Util, colors map[string]renderer.SegmentColor) *Track {
 	return &Track{
-		Length: map[string]float64{"none": 0, "short": 25, "medium": 50, "long": 100},
-		Curve:  map[string]float64{"none": 0, "easy": 2, "medium": 4, "hard": 6},
-		Hill:   map[string]float64{"none": 0, "low": 20, "medium": 40, "high": 60},
-		colors: map[string]renderer.SegmentColor{
-			"LIGHT":  {Road: "#6B6B6B", Grass: "#10AA10", Rumble: "#555555", Lane: "#CCCCCC"},
-			"DARK":   {Road: "#696969", Grass: "#009A00", Rumble: "#BBBBBB"},
-			"START":  {Road: "#fff", Grass: "#fff", Rumble: "#fff"},
-			"FINISH": {Road: "#000", Grass: "#000", Rumble: "#000"},
-		},
+		Length:        map[string]float64{"none": 0, "short": 25, "medium": 50, "long": 100},
+		Curve:         map[string]float64{"none": 0, "easy": 2, "medium": 4, "hard": 6},
+		Hill:          map[string]float64{"none": 0, "low": 20, "medium": 40, "high": 60},
+		colors:        colors,
 		RumbleLength:  rumbleLength,
 		SegmentLength: segmentLength,
 		playerZ:       playerZ,
@@ -44,7 +42,7 @@ func NewTrack(rumbleLength int, segmentLength int, playerZ float64, util *util.U
 	}
 }
 
-func (t *Track) addSegment(curve float64, y float64) {
+func (t *Track) addSegment(curve float64, y float64, tunnelStart, tunnelEnd, inTunnel bool) {
 	n := len(t.Segments)
 
 	color := t.colors["LIGHT"]
@@ -52,7 +50,7 @@ func (t *Track) addSegment(curve float64, y float64) {
 		color = t.colors["DARK"]
 	}
 
-	t.Segments = append(t.Segments, Segment{
+	segment := Segment{
 		Index: n,
 		P1: util.Gamepoint{
 			World: util.Zpoint{
@@ -68,7 +66,19 @@ func (t *Track) addSegment(curve float64, y float64) {
 		},
 		Color: color,
 		Curve: curve,
-	})
+	}
+
+	if tunnelStart {
+		segment.TunnelStart = true
+	}
+	if tunnelEnd {
+		segment.TunnelEnd = true
+	}
+	if inTunnel {
+		segment.InTunnel = true
+	}
+
+	t.Segments = append(t.Segments, segment)
 
 }
 
@@ -79,26 +89,38 @@ func (t *Track) lastY() float64 {
 	return t.Segments[len(t.Segments)-1].P2.World.Y
 }
 
-func (t *Track) addRoad(enter, hold, leave, curve, y float64) {
+func (t *Track) addRoad(enter, hold, leave, curve, y float64, tunnelStart, tunnelEnd, inTunnel bool) {
 	startY := t.lastY()
 	endY := startY + (y * float64(t.SegmentLength))
 	total := enter + hold + leave
 	for n := 0.0; n < enter; n++ {
-		t.addSegment(t.util.EaseIn(0.0, curve, n/enter), t.util.EaseInOut(startY, endY, n/total))
+		t.addSegment(t.util.EaseIn(0.0, curve, n/enter), t.util.EaseInOut(startY, endY, n/total), tunnelStart, tunnelEnd, inTunnel)
 	}
 	for n := 0.0; n < hold; n++ {
-		t.addSegment(curve, t.util.EaseInOut(startY, endY, (enter+n)/total))
+		t.addSegment(curve, t.util.EaseInOut(startY, endY, (enter+n)/total), tunnelStart, tunnelEnd, inTunnel)
 	}
 	for n := 0.0; n < leave; n++ {
-		t.addSegment(t.util.EaseInOut(curve, 0.0, n/leave), t.util.EaseInOut(startY, endY, (enter+hold+n)/total))
+		t.addSegment(t.util.EaseInOut(curve, 0.0, n/leave), t.util.EaseInOut(startY, endY, (enter+hold+n)/total), tunnelStart, tunnelEnd, inTunnel)
 	}
+}
+
+func (t *Track) addTunnel(num float64) {
+	if num == 0 {
+		num = t.Length["medium"]
+	}
+	t.addRoad(num, num, num, 0.0, 0.0, true, false, false)
+	t.addRoad(num, num, num, 0.0, 0.0, false, false, true)
+	t.addRoad(num, num, num, 0.0, 0.0, false, false, true)
+	t.addRoad(num, num, num, 0.0, 0.0, false, false, true)
+	t.addRoad(num, num, num, 0.0, 0.0, false, false, true)
+	t.addRoad(num, num, num, 0.0, 0.0, false, true, false)
 }
 
 func (t *Track) addStraight(num, hill float64) {
 	if num == 0 {
 		num = t.Length["medium"]
 	}
-	t.addRoad(num, num, num, 0.0, hill)
+	t.addRoad(num, num, num, 0.0, hill, false, false, false)
 }
 
 func (t *Track) addCurve(num, curve, hill float64) {
@@ -108,15 +130,32 @@ func (t *Track) addCurve(num, curve, hill float64) {
 	if curve == 0 {
 		curve = t.Curve["medium"]
 	}
-	t.addRoad(num, num, num, curve, hill)
+	t.addRoad(num, num, num, curve, hill, false, false, false)
 }
 
 func (t *Track) addSCurves() {
-	t.addRoad(t.Length["medium"], t.Length["medium"], t.Length["medium"], -t.Curve["easy"], 0.0)
-	t.addRoad(t.Length["medium"], t.Length["medium"], t.Length["medium"], t.Curve["medium"], 0.0)
-	t.addRoad(t.Length["medium"], t.Length["medium"], t.Length["medium"], t.Curve["easy"], 0.0)
-	t.addRoad(t.Length["medium"], t.Length["medium"], t.Length["medium"], -t.Curve["easy"], 0.0)
-	t.addRoad(t.Length["medium"], t.Length["medium"], t.Length["medium"], -t.Curve["medium"], 0.0)
+	t.addRoad(t.Length["medium"], t.Length["medium"], t.Length["medium"], -t.Curve["easy"], 0.0, false, false, false)
+	t.addRoad(t.Length["medium"], t.Length["medium"], t.Length["medium"], t.Curve["medium"], 0.0, false, false, false)
+	t.addRoad(t.Length["medium"], t.Length["medium"], t.Length["medium"], t.Curve["easy"], 0.0, false, false, false)
+	t.addRoad(t.Length["medium"], t.Length["medium"], t.Length["medium"], -t.Curve["easy"], 0.0, false, false, false)
+	t.addRoad(t.Length["medium"], t.Length["medium"], t.Length["medium"], -t.Curve["medium"], 0.0, false, false, false)
+}
+
+func (t *Track) BuildTrackWithTunnel() int {
+	t.Segments = make([]Segment, 0)
+
+	// The track
+	t.addStraight(t.Length["short"], 0.0)
+	t.addTunnel(t.Length["medium"])
+
+	// Start and Finish markers
+	// t.Segments[t.FindSegment(int(t.playerZ)).Index+2].Color = t.colors["START"]
+	// t.Segments[t.FindSegment(int(t.playerZ)).Index+3].Color = t.colors["START"]
+	// for n := 0; n < t.RumbleLength; n++ {
+	// 	t.Segments[len(t.Segments)-1-n].Color = t.colors["FINISH"]
+	// }
+
+	return len(t.Segments) * t.SegmentLength
 }
 
 func (t *Track) BuildTrack() int {
@@ -171,7 +210,7 @@ func (t *Track) addDownhillToEnd(num float64) {
 	if num == 0 {
 		num = 200
 	}
-	t.addRoad(num, num, num, -t.Curve["easy"], -t.lastY()/float64(t.SegmentLength))
+	t.addRoad(num, num, num, -t.Curve["easy"], -t.lastY()/float64(t.SegmentLength), false, false, false)
 }
 
 func (t *Track) BuildCircleTrack() int {

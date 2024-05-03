@@ -84,10 +84,10 @@ func (g *Game) Initialize() {
 	g.fogcolor = "#005108"
 
 	g.colors = map[string]renderer.SegmentColor{
-		"LIGHT":  {Road: "#6B6B6B", Grass: "#10AA10", Rumble: "#555555", Lane: "#CCCCCC"},
-		"DARK":   {Road: "#696969", Grass: "#009A00", Rumble: "#BE1B08"},
-		"START":  {Road: "#fff", Grass: "#fff", Rumble: "#fff"},
-		"FINISH": {Road: "#000", Grass: "#000", Rumble: "#000"},
+		"LIGHT":  {Road: "#6B6B6B", Grass: "#10AA10", Rumble: "#555555", Lane: "#CCCCCC", Tunnel: "#808080"},
+		"DARK":   {Road: "#696969", Grass: "#009A00", Rumble: "#BE1B08", Tunnel: "#373737"},
+		"START":  {Road: "#ffffff", Grass: "#ffffff", Rumble: "#ffffff", Tunnel: "#000000"},
+		"FINISH": {Road: "#000000", Grass: "#000000", Rumble: "#000000", Tunnel: "#000000"},
 	}
 
 	// Set config
@@ -333,14 +333,16 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			continue
 		}
 
-		g.render.Segment(screenWidth, g.config.lanes,
+		g.render.Segment(screenWidth, screenHeight, g.config.lanes,
 			segment.P1.Screen.X,
 			segment.P1.Screen.Y,
+			segment.P1.Screen.CielingY,
 			segment.P1.Screen.W,
 			segment.P2.Screen.X,
 			segment.P2.Screen.Y,
+			segment.P2.Screen.CielingY,
 			segment.P2.Screen.W,
-			segment.Color)
+			segment.Color, segment.TunnelStart, segment.TunnelEnd, segment.InTunnel)
 
 		maxy = segment.P1.Screen.Y
 	}
@@ -393,12 +395,13 @@ func main() {
 	game := &Game{}
 	game.Initialize()
 	util := util.NewUtil()
-	track := track.NewTrack(game.config.rumbleLength, game.config.segmentLength, game.world.playerZ, util)
+	track := track.NewTrack(game.config.rumbleLength, game.config.segmentLength, game.world.playerZ, util, game.colors)
 	game.util = util
 	game.road = track
 	//game.world.trackLength = game.road.BuildCircleTrack()
 	//game.world.trackLength = game.road.BuildTrack()
-	game.world.trackLength = game.road.BuildHillyTrack()
+	//	game.world.trackLength = game.road.BuildHillyTrack()
+	game.world.trackLength = game.road.BuildTrackWithTunnel()
 
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
