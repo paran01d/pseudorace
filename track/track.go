@@ -126,14 +126,14 @@ func (t *Track) addStraight(num, hill float64) {
 	t.addRoad(num, num, num, 0.0, hill, false, false, false)
 }
 
-func (t *Track) addCurve(num, curve, hill float64) {
+func (t *Track) addCurve(num, curve, hill float64, startTunnel bool, endTunnel bool, inTunnel bool) {
 	if num == 0 {
 		num = t.Length["medium"]
 	}
 	if curve == 0 {
 		curve = t.Curve["medium"]
 	}
-	t.addRoad(num, num, num, curve, hill, false, false, false)
+	t.addRoad(num, num, num, curve, hill, startTunnel, endTunnel, inTunnel)
 }
 
 func (t *Track) addSCurves() {
@@ -168,15 +168,15 @@ func (t *Track) BuildTrack() int {
 	t.addStraight(t.Length["short"]/4, 0.0)
 	t.addSCurves()
 	t.addStraight(t.Length["long"], 0.0)
-	t.addCurve(t.Length["medium"], t.Curve["medium"], 0.0)
-	t.addCurve(t.Length["long"], t.Curve["medium"], 0.0)
+	t.addCurve(t.Length["medium"], t.Curve["medium"], 0.0, false, false, false)
+	t.addCurve(t.Length["long"], t.Curve["medium"], 0.0, false, false, false)
 	t.addStraight(0.0, 0.0)
 	t.addSCurves()
-	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0)
-	t.addCurve(t.Length["long"], t.Curve["medium"], 0.0)
+	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0, false, false, false)
+	t.addCurve(t.Length["long"], t.Curve["medium"], 0.0, false, false, false)
 	t.addStraight(0.0, 0.0)
 	t.addSCurves()
-	t.addCurve(t.Length["long"], -t.Curve["easy"], 0.0)
+	t.addCurve(t.Length["long"], -t.Curve["easy"], 0.0, false, false, false)
 	t.addDownhillToEnd(0)
 
 	// Start and Finish markers
@@ -218,10 +218,10 @@ func (t *Track) addDownhillToEnd(num float64) {
 
 func (t *Track) BuildCircleTrack() int {
 	t.Segments = make([]Segment, 0)
-	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0)
-	t.addCurve(t.Length["long"], -t.Curve["medium"], -t.Hill["medium"])
-	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0)
-	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0)
+	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0, false, false, false)
+	t.addCurve(t.Length["long"], -t.Curve["medium"], -t.Hill["medium"], false, false, false)
+	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0, true, false, true)
+	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0, false, true, true)
 	t.addDownhillToEnd(0)
 
 	// Start and Finish markers
