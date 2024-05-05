@@ -98,12 +98,12 @@ func (g *Game) Initialize() {
 		lanes:          3,
 		fieldOfView:    95,
 		cameraHeight:   2200,
-		drawDistance:   400,
+		drawDistance:   200,
 		fogDensity:     5,
 		centrifugal:    0.3,
 		drawBackground: true,
 		drawPlayer:     true,
-		drawFog:        true,
+		drawFog:        false,
 		drawRoad:       true,
 		drawDebug:      true,
 	}
@@ -295,6 +295,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		screen.DrawImage(g.bgImage, nil)
 	}
 
+	segments := []renderer.SegmentDetails{}
+
 	for n := 0; n <= g.config.drawDistance; n++ {
 		segment := g.road.Segments[(baseSegment.Index+n)%len(g.road.Segments)]
 		segment.Looped = segment.Index < baseSegment.Index
@@ -327,25 +329,30 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		x = x + dx
 		dx = dx + segment.Curve
 
-		if (segment.P1.Camera.Z <= g.world.cameraDepth) || // behind us
-			(segment.P2.Screen.Y >= segment.P1.Screen.Y) || // back face cull
-			(segment.P2.Screen.Y >= maxy) { // clip by (already rendered) segment
+		if segment.P1.Camera.Z <= g.world.cameraDepth || // behind us
+			((segment.P2.Screen.Y >= segment.P1.Screen.Y) && !segment.InTunnel) || // back face cull
+			((segment.P2.Screen.Y >= maxy) && !segment.InTunnel) { // clip by (already rendered) segment
 			continue
 		}
 
-		g.render.Segment(screenWidth, screenHeight, g.config.lanes,
-			segment.P1.Screen.X,
-			segment.P1.Screen.Y,
-			segment.P1.Screen.CielingY,
-			segment.P1.Screen.W,
-			segment.P2.Screen.X,
-			segment.P2.Screen.Y,
-			segment.P2.Screen.CielingY,
-			segment.P2.Screen.W,
-			segment.Color, segment.TunnelStart, segment.TunnelEnd, segment.InTunnel)
+		segments = append(segments, renderer.SegmentDetails{
+			P1:          &segment.P1.Screen,
+			P2:          &segment.P2.Screen,
+			Color:       segment.Color,
+			TunnelStart: segment.TunnelStart,
+			TunnelEnd:   segment.TunnelEnd,
+			InTunnel:    segment.InTunnel,
+		})
 
 		maxy = segment.P1.Screen.Y
 	}
+
+	// Render the segments backwards
+	for i := len(segments) - 1; i >= 0; i-- {
+		segment := segments[i]
+		g.render.Segment(screenWidth, screenHeight, g.config.lanes, segment)
+	}
+
 	if g.config.drawDebug {
 		g.render.ResetDebug()
 		g.render.DebugPrintAt(fmt.Sprintf("TPS: %f Speed: %f Position: %f PlayerX: %f PlayerY: %f maxy: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position, g.world.playerX, playerY, maxy), 50, 50)
@@ -398,10 +405,10 @@ func main() {
 	track := track.NewTrack(game.config.rumbleLength, game.config.segmentLength, game.world.playerZ, util, game.colors)
 	game.util = util
 	game.road = track
-	//game.world.trackLength = game.road.BuildCircleTrack()
+	game.world.trackLength = game.road.BuildCircleTrack()
 	//game.world.trackLength = game.road.BuildTrack()
 	//	game.world.trackLength = game.road.BuildHillyTrack()
-	game.world.trackLength = game.road.BuildTrackWithTunnel()
+	//game.world.trackLength = game.road.BuildTrackWithTunnel()
 
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)

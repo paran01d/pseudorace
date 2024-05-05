@@ -105,11 +105,20 @@ func (r *Renderer) Background(background Background, dstImg *ebiten.Image, playe
 	}
 }
 
-func (r *Renderer) Segment(width, height, lanes int, x1, y1, cy1, w1, x2, y2, cy2, w2 float64, scolor SegmentColor, tunnelStart, tunnelEnd, inTunnel bool) {
-	r1 := r.rumbleWidth(w1, float64(lanes))
-	r2 := r.rumbleWidth(w2, float64(lanes))
-	l1 := r.laneMakerWidth(w1, float64(lanes))
-	l2 := r.laneMakerWidth(w2, float64(lanes))
+type SegmentDetails struct {
+	P1          *util.Screenpoint
+	P2          *util.Screenpoint
+	Color       SegmentColor
+	TunnelStart bool
+	TunnelEnd   bool
+	InTunnel    bool
+}
+
+func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
+	r1 := r.rumbleWidth(sd.P1.W, float64(lanes))
+	r2 := r.rumbleWidth(sd.P2.W, float64(lanes))
+	l1 := r.laneMakerWidth(sd.P1.W, float64(lanes))
+	l2 := r.laneMakerWidth(sd.P2.W, float64(lanes))
 
 	// Grass
 	// mx1 = 0, my1 = y2
@@ -118,50 +127,50 @@ func (r *Renderer) Segment(width, height, lanes int, x1, y1, cy1, w1, x2, y2, cy
 	// mx4 = 0, my4 = y2+(y1-y2)
 
 	// First side of road
-	if inTunnel {
-		if tunnelStart {
+	if sd.InTunnel {
+		if sd.TunnelStart {
 			// Draw tunnel entrance wall
-			r.Polygon(0, y1, x1-w1, y1, x1-w1, cy1-20, 0, cy1-20, scolor.Tunnel)
+			r.Polygon(0, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.CielingY-20, 0, sd.P1.CielingY-20, sd.Color.Tunnel)
 		}
 		// Left Wall
-		r.Polygon(x1-w1, y1, x1-w1, cy1, x2-w2, cy2, x2-w2, y2, scolor.Tunnel)
-		if tunnelStart {
+		r.Polygon(sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.CielingY, sd.P2.X-sd.P2.W, sd.P2.CielingY, sd.P2.X-sd.P2.W, sd.P2.Y, sd.Color.Tunnel)
+		if sd.TunnelStart {
 			// Draw tunnel entrance cieling
-			r.Polygon(x1-w1, cy1, x1-w1, cy1-20, x1+w1, cy1-20, x1+w1, cy1, scolor.Tunnel)
+			r.Polygon(sd.P1.X-sd.P1.W, sd.P1.CielingY, sd.P1.X-sd.P1.W, sd.P1.CielingY-20, sd.P2.X+sd.P1.W, sd.P1.CielingY-20, sd.P2.X+sd.P1.W, sd.P1.CielingY, sd.Color.Tunnel)
 		}
 		// cieling
-		r.Polygon(x1-w1, cy1, x1+w1, cy1, x2+w2, cy2, x2-w2, cy2, scolor.Tunnel)
+		r.Polygon(sd.P1.X-sd.P1.W, sd.P1.CielingY, sd.P1.X+sd.P1.W, sd.P1.CielingY, sd.P2.X+sd.P2.W, sd.P2.CielingY, sd.P2.X-sd.P2.W, sd.P2.CielingY, sd.Color.Tunnel)
 		// Road
-		r.Polygon(x1-w1, y1, x1+w1, y1, x2+w2, y2, x2-w2, y2, scolor.Road)
+		r.Polygon(sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X+sd.P1.W, sd.P1.Y, sd.P2.X+sd.P2.W, sd.P2.Y, sd.P2.X-sd.P2.W, sd.P2.Y, sd.Color.Road)
 		// Right Wall
-		//r.Polygon(float64(width), y2, x2+w2+r2, y2, x1+w1+r1, y1-float64(height), float64(width), y2-(float64(height)), scolor.Tunnel)
+		//r.Polygon(float64(width), sd.P2.Y, sd.P2.X+sd.P2.W+r2, sd.P2.Y, sd.P1.X+sd.P1.W+r1, sd.P1.Y-float64(height), float64(width), sd.P2.Y-(float64(height)), sd.Color.Tunnel)
 	} else {
 		// Grass
-		r.Polygon(0, y2, x1-w2, y2, x1-w1, y2+(y1-y2), 0, y2+(y1-y2), scolor.Grass)
+		r.Polygon(0, sd.P2.Y, sd.P1.X-sd.P2.W, sd.P2.Y, sd.P1.X-sd.P1.W, sd.P2.Y+(sd.P1.Y-sd.P2.Y), 0, sd.P2.Y+(sd.P1.Y-sd.P2.Y), sd.Color.Grass)
 		// Road
-		r.Polygon(x1-w1-r1, y1, x1-w1, y1, x2-w2, y2, x2-w2-r2, y2, scolor.Rumble)
-		r.Polygon(x1-w1, y1, x1+w1, y1, x2+w2, y2, x2-w2, y2, scolor.Road)
-		r.Polygon(x1+w1+r1, y1, x1+w1, y1, x2+w2, y2, x2+w2+r2, y2, scolor.Rumble)
+		r.Polygon(sd.P1.X-sd.P1.W-r1, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.Y, sd.P2.X-sd.P2.W, sd.P2.Y, sd.P2.X-sd.P2.W-r2, sd.P2.Y, sd.Color.Rumble)
+		r.Polygon(sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X+sd.P1.W, sd.P1.Y, sd.P2.X+sd.P2.W, sd.P2.Y, sd.P2.X-sd.P2.W, sd.P2.Y, sd.Color.Road)
+		r.Polygon(sd.P1.X+sd.P1.W+r1, sd.P1.Y, sd.P1.X+sd.P1.W, sd.P1.Y, sd.P2.X+sd.P2.W, sd.P2.Y, sd.P2.X+sd.P2.W+r2, sd.P2.Y, sd.Color.Rumble)
 		// Grass
-		r.Polygon(float64(width), y2, x2+w2+r2, y2, x1+w1+r1, y1, float64(width), y2+(y1-y2), scolor.Grass)
+		r.Polygon(float64(width), sd.P2.Y, sd.P2.X+sd.P2.W+r2, sd.P2.Y, sd.P1.X+sd.P1.W+r1, sd.P1.Y, float64(width), sd.P2.Y+(sd.P1.Y-sd.P2.Y), sd.Color.Grass)
 	}
 
-	if scolor.Lane != "" {
-		lanew1 := (w1 * 2) / float64(lanes)
-		lanew2 := (w2 * 2) / float64(lanes)
-		lanex1 := x1 - w1 + lanew1
-		lanex2 := x2 - w2 + lanew2
+	if sd.Color.Lane != "" {
+		lanew1 := (sd.P1.W * 2) / float64(lanes)
+		lanew2 := (sd.P2.W * 2) / float64(lanes)
+		lanex1 := sd.P1.X - sd.P1.W + lanew1
+		lanex2 := sd.P2.X - sd.P2.W + lanew2
 		for lane := 1; lane < lanes; lanex1, lanex2, lane = lanex1+lanew1, lanex2+lanew2, lane+1 {
 			r.Polygon(
 				lanex1-l1/2,
-				y1,
+				sd.P1.Y,
 				lanex1+l1/2,
-				y1,
+				sd.P1.Y,
 				lanex2+l2/2,
-				y2,
+				sd.P2.Y,
 				lanex2-l2/2,
-				y2,
-				scolor.Lane,
+				sd.P2.Y,
+				sd.Color.Lane,
 			)
 		}
 	}
