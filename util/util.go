@@ -21,11 +21,12 @@ type Zpoint struct {
 }
 
 type Screenpoint struct {
-	X        float64
-	Y        float64
-	CielingY float64
-	W        float64
-	Scale    float64
+	X         float64
+	Y         float64
+	CielingY  float64
+	BridgeTop float64
+	W         float64
+	Scale     float64
 }
 
 func NewUtil() *Util {
@@ -78,7 +79,8 @@ func (u *Util) Project(gp *Gamepoint, cameraX, cameraY, cameraZ, cameraDepth, wi
 	gp.Screen.Scale = cameraDepth / gp.Camera.Z
 	gp.Screen.X = math.Round((width / 2) + (gp.Screen.Scale * gp.Camera.X * width / 2))
 	gp.Screen.Y = math.Round((height / 2) - (gp.Screen.Scale * gp.Camera.Y * height / 2))
-	gp.Screen.CielingY = math.Round((height / 2) + (gp.Screen.Scale * gp.Camera.Y * height / 2))
+	gp.Screen.CielingY = math.Round(((height) / 2) + (gp.Screen.Scale * gp.Camera.Y * (height) / 2))
+	gp.Screen.BridgeTop = gp.Screen.CielingY - (gp.Screen.Scale * roadWidth * height / 2)
 	gp.Screen.W = math.Round((gp.Screen.Scale * roadWidth * width / 2))
 }
 

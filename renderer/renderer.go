@@ -24,11 +24,12 @@ type Renderer struct {
 }
 
 type SegmentColor struct {
-	Road   string
-	Grass  string
-	Rumble string
-	Lane   string
-	Tunnel string
+	Road        string
+	Grass       string
+	Rumble      string
+	Lane        string
+	Tunnel      string
+	TunnelOuter string
 }
 
 type BackgroundPart struct {
@@ -130,20 +131,20 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 	if sd.InTunnel {
 		if sd.TunnelStart {
 			// Draw tunnel entrance wall
-			r.Polygon(0, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.CielingY-20, 0, sd.P1.CielingY-20, sd.Color.Tunnel)
+			r.Polygon(0, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P2.BridgeTop, 0, sd.P2.BridgeTop, sd.Color.TunnelOuter)
 		}
 		// Left Wall
 		r.Polygon(sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.CielingY, sd.P2.X-sd.P2.W, sd.P2.CielingY, sd.P2.X-sd.P2.W, sd.P2.Y, sd.Color.Tunnel)
 		if sd.TunnelStart {
 			// Draw tunnel entrance cieling
-			r.Polygon(sd.P1.X-sd.P1.W, sd.P1.CielingY, sd.P1.X-sd.P1.W, sd.P1.CielingY-20, sd.P2.X+sd.P1.W, sd.P1.CielingY-20, sd.P2.X+sd.P1.W, sd.P1.CielingY, sd.Color.Tunnel)
+			r.Polygon(sd.P1.X-sd.P1.W, sd.P1.CielingY, sd.P1.X-sd.P1.W, sd.P2.BridgeTop, sd.P2.X+sd.P1.W, sd.P2.BridgeTop, sd.P2.X+sd.P1.W, sd.P1.CielingY, sd.Color.TunnelOuter)
 		}
 		// cieling
 		r.Polygon(sd.P1.X-sd.P1.W, sd.P1.CielingY, sd.P1.X+sd.P1.W, sd.P1.CielingY, sd.P2.X+sd.P2.W, sd.P2.CielingY, sd.P2.X-sd.P2.W, sd.P2.CielingY, sd.Color.Tunnel)
 		// Road
 		r.Polygon(sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X+sd.P1.W, sd.P1.Y, sd.P2.X+sd.P2.W, sd.P2.Y, sd.P2.X-sd.P2.W, sd.P2.Y, sd.Color.Road)
 		// Right Wall
-		//r.Polygon(float64(width), sd.P2.Y, sd.P2.X+sd.P2.W+r2, sd.P2.Y, sd.P1.X+sd.P1.W+r1, sd.P1.Y-float64(height), float64(width), sd.P2.Y-(float64(height)), sd.Color.Tunnel)
+		r.Polygon(sd.P2.X+sd.P2.W+r1, sd.P1.Y, sd.P2.X+sd.P1.W+r1, sd.P2.Y, sd.P2.X+sd.P1.W+r1, sd.P2.CielingY, sd.P2.X+sd.P2.W+r2, sd.P1.CielingY, sd.Color.Tunnel)
 	} else {
 		// Grass
 		r.Polygon(0, sd.P2.Y, sd.P1.X-sd.P2.W, sd.P2.Y, sd.P1.X-sd.P1.W, sd.P2.Y+(sd.P1.Y-sd.P2.Y), 0, sd.P2.Y+(sd.P1.Y-sd.P2.Y), sd.Color.Grass)
