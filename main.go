@@ -296,7 +296,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	segments := []renderer.SegmentDetails{}
-
 	for n := 0; n <= g.config.drawDistance; n++ {
 		segment := g.road.Segments[(baseSegment.Index+n)%len(g.road.Segments)]
 		segment.Looped = segment.Index < baseSegment.Index
@@ -312,7 +311,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			g.world.position-camzmodifier,
 			g.world.cameraDepth,
 			screenWidth,
-			screenHeight,
+			screenHeight-20,
 			g.config.roadWidth,
 		)
 		g.util.Project(
@@ -322,14 +321,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			g.world.position-camzmodifier,
 			g.world.cameraDepth,
 			screenWidth,
-			screenHeight,
+			screenHeight-20,
 			g.config.roadWidth,
 		)
 
 		x = x + dx
 		dx = dx + segment.Curve
 
-		if segment.P1.Camera.Z <= g.world.cameraDepth || // behind us
+		if (segment.P1.Camera.Z <= g.world.cameraDepth) || // behind us
 			((segment.P2.Screen.Y >= segment.P1.Screen.Y) && !segment.InTunnel) || // back face cull
 			((segment.P2.Screen.Y >= maxy) && !segment.InTunnel) { // clip by (already rendered) segment
 			continue
