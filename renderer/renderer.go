@@ -132,31 +132,121 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 	if sd.InTunnel {
 		if sd.TunnelStart {
 			// Draw tunnel entrance wall
-			r.Polygon(0, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P2.BridgeTop, 0, sd.P2.BridgeTop, sd.Color.TunnelOuter)
+			r.Polygon(
+				polyPoint{0, sd.P1.Y},
+				polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
+				polyPoint{sd.P1.X - sd.P1.W, sd.P1.BridgeTop},
+				polyPoint{0, sd.P1.BridgeTop},
+				sd.Color.TunnelOuter,
+			)
 		} else if sd.PlayerSegment {
-			r.Polygon(0, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P2.BridgeTop, 0, sd.P2.BridgeTop, sd.Color.Tunnel)
+			r.Polygon(
+				polyPoint{0, sd.P1.Y},
+				polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
+				polyPoint{sd.P1.X - sd.P1.W, sd.P1.BridgeTop},
+				polyPoint{0, sd.P1.BridgeTop},
+				sd.Color.Tunnel,
+			)
 		}
 		// Left Wall
-		r.Polygon(sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.CielingY, sd.P2.X-sd.P2.W, sd.P2.CielingY, sd.P2.X-sd.P2.W, sd.P2.Y, sd.Color.Tunnel)
+		r.Polygon(polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
+			polyPoint{sd.P1.X - sd.P1.W, sd.P1.CielingY},
+			polyPoint{sd.P2.X - sd.P2.W, sd.P2.CielingY},
+			polyPoint{sd.P2.X - sd.P2.W, sd.P2.Y},
+			sd.Color.Tunnel,
+		)
 		if sd.TunnelStart {
 			// Draw tunnel entrance cieling
-			r.Polygon(sd.P1.X-sd.P1.W, sd.P1.CielingY, sd.P1.X-sd.P1.W, sd.P2.BridgeTop, sd.P2.X+sd.P1.W, sd.P2.BridgeTop, sd.P2.X+sd.P1.W, sd.P1.CielingY, sd.Color.TunnelOuter)
+			r.Polygon(
+				polyPoint{sd.P1.X - sd.P1.W, sd.P1.CielingY},
+				polyPoint{sd.P1.X - sd.P1.W, sd.P1.BridgeTop},
+				polyPoint{sd.P1.X + sd.P1.W, sd.P1.BridgeTop},
+				polyPoint{sd.P1.X + sd.P1.W, sd.P1.CielingY},
+				sd.Color.TunnelOuter,
+			)
 		}
 		// cieling
-		r.Polygon(sd.P1.X-sd.P1.W, sd.P1.CielingY, sd.P1.X+sd.P1.W, sd.P1.CielingY, sd.P2.X+sd.P2.W, sd.P2.CielingY, sd.P2.X-sd.P2.W, sd.P2.CielingY, sd.Color.Tunnel)
+		r.Polygon(
+			polyPoint{sd.P1.X - sd.P1.W, sd.P1.CielingY},
+			polyPoint{sd.P1.X + sd.P1.W, sd.P1.CielingY},
+			polyPoint{sd.P2.X + sd.P2.W, sd.P2.CielingY},
+			polyPoint{sd.P2.X - sd.P2.W, sd.P2.CielingY},
+			sd.Color.Tunnel,
+		)
 		// Road
-		r.Polygon(sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X+sd.P1.W, sd.P1.Y, sd.P2.X+sd.P2.W, sd.P2.Y, sd.P2.X-sd.P2.W, sd.P2.Y, sd.Color.Road)
+		r.Polygon(
+			polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
+			polyPoint{sd.P1.X + sd.P1.W, sd.P1.Y},
+			polyPoint{sd.P2.X + sd.P2.W, sd.P2.Y},
+			polyPoint{sd.P2.X - sd.P2.W, sd.P2.Y},
+			sd.Color.Road,
+		)
+		if sd.TunnelStart {
+			// Draw tunnel entrance wall
+			r.Polygon(
+				polyPoint{float64(width), sd.P1.Y},
+				polyPoint{sd.P1.X + sd.P1.W, sd.P1.Y},
+				polyPoint{sd.P1.X + sd.P1.W, sd.P1.BridgeTop},
+				polyPoint{float64(width), sd.P1.BridgeTop},
+				sd.Color.TunnelOuter,
+			)
+		} else if sd.PlayerSegment {
+			r.Polygon(
+				polyPoint{float64(width), sd.P1.Y},
+				polyPoint{sd.P1.X + sd.P1.W, sd.P1.Y},
+				polyPoint{sd.P1.X + sd.P1.W, sd.P1.BridgeTop},
+				polyPoint{float64(width), sd.P1.BridgeTop},
+				sd.Color.Tunnel,
+			)
+
+		}
 		// Right Wall
-		r.Polygon(sd.P2.X+sd.P2.W+r1, sd.P1.Y, sd.P2.X+sd.P1.W+r1, sd.P2.Y, sd.P2.X+sd.P1.W+r1, sd.P2.CielingY, sd.P2.X+sd.P2.W+r2, sd.P1.CielingY, sd.Color.Tunnel)
+		r.Polygon(
+			polyPoint{sd.P1.X + sd.P1.W, sd.P1.Y},
+			polyPoint{sd.P1.X + sd.P1.W, sd.P1.CielingY},
+			polyPoint{sd.P2.X + sd.P2.W, sd.P2.CielingY},
+			polyPoint{sd.P2.X + sd.P2.W, sd.P2.Y},
+			sd.Color.Tunnel,
+		)
 	} else {
 		// Grass
-		r.Polygon(0, sd.P2.Y, sd.P1.X-sd.P2.W, sd.P2.Y, sd.P1.X-sd.P1.W, sd.P2.Y+(sd.P1.Y-sd.P2.Y), 0, sd.P2.Y+(sd.P1.Y-sd.P2.Y), sd.Color.Grass)
+		r.Polygon(
+			polyPoint{0, sd.P2.Y},
+			polyPoint{sd.P1.X - sd.P2.W, sd.P2.Y},
+			polyPoint{sd.P1.X - sd.P1.W, sd.P2.Y + (sd.P1.Y - sd.P2.Y)},
+			polyPoint{0, sd.P2.Y + (sd.P1.Y - sd.P2.Y)},
+			sd.Color.Grass,
+		)
 		// Road
-		r.Polygon(sd.P1.X-sd.P1.W-r1, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.Y, sd.P2.X-sd.P2.W, sd.P2.Y, sd.P2.X-sd.P2.W-r2, sd.P2.Y, sd.Color.Rumble)
-		r.Polygon(sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X+sd.P1.W, sd.P1.Y, sd.P2.X+sd.P2.W, sd.P2.Y, sd.P2.X-sd.P2.W, sd.P2.Y, sd.Color.Road)
-		r.Polygon(sd.P1.X+sd.P1.W+r1, sd.P1.Y, sd.P1.X+sd.P1.W, sd.P1.Y, sd.P2.X+sd.P2.W, sd.P2.Y, sd.P2.X+sd.P2.W+r2, sd.P2.Y, sd.Color.Rumble)
+		r.Polygon(
+			polyPoint{sd.P1.X - sd.P1.W - r1, sd.P1.Y},
+			polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
+			polyPoint{sd.P2.X - sd.P2.W, sd.P2.Y},
+			polyPoint{sd.P2.X - sd.P2.W - r2, sd.P2.Y},
+			sd.Color.Rumble,
+		)
+		r.Polygon(
+			polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
+			polyPoint{sd.P1.X + sd.P1.W, sd.P1.Y},
+			polyPoint{sd.P2.X + sd.P2.W, sd.P2.Y},
+			polyPoint{sd.P2.X - sd.P2.W, sd.P2.Y},
+			sd.Color.Road,
+		)
+		r.Polygon(
+			polyPoint{sd.P1.X + sd.P1.W + r1, sd.P1.Y},
+			polyPoint{sd.P1.X + sd.P1.W, sd.P1.Y},
+			polyPoint{sd.P2.X + sd.P2.W, sd.P2.Y},
+			polyPoint{sd.P2.X + sd.P2.W + r2, sd.P2.Y},
+			sd.Color.Rumble,
+		)
 		// Grass
-		r.Polygon(float64(width), sd.P2.Y, sd.P2.X+sd.P2.W+r2, sd.P2.Y, sd.P1.X+sd.P1.W+r1, sd.P1.Y, float64(width), sd.P2.Y+(sd.P1.Y-sd.P2.Y), sd.Color.Grass)
+		r.Polygon(
+			polyPoint{float64(width), sd.P2.Y},
+			polyPoint{sd.P2.X + sd.P2.W + r2, sd.P2.Y},
+			polyPoint{sd.P1.X + sd.P1.W + r1, sd.P1.Y},
+			polyPoint{float64(width), sd.P2.Y + (sd.P1.Y - sd.P2.Y)},
+			sd.Color.Grass,
+		)
 	}
 
 	if sd.Color.Lane != "" {
@@ -166,14 +256,10 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 		lanex2 := sd.P2.X - sd.P2.W + lanew2
 		for lane := 1; lane < lanes; lanex1, lanex2, lane = lanex1+lanew1, lanex2+lanew2, lane+1 {
 			r.Polygon(
-				lanex1-l1/2,
-				sd.P1.Y,
-				lanex1+l1/2,
-				sd.P1.Y,
-				lanex2+l2/2,
-				sd.P2.Y,
-				lanex2-l2/2,
-				sd.P2.Y,
+				polyPoint{lanex1 - l1/2, sd.P1.Y},
+				polyPoint{lanex1 + l1/2, sd.P1.Y},
+				polyPoint{lanex2 + l2/2, sd.P2.Y},
+				polyPoint{lanex2 - l2/2, sd.P2.Y},
 				sd.Color.Lane,
 			)
 		}
@@ -184,12 +270,17 @@ func (r *Renderer) Image() *ebiten.Image {
 	return r.img
 }
 
-func (r *Renderer) Polygon(x1, y1, x2, y2, x3, y3, x4, y4 float64, color string) {
+type polyPoint struct {
+	x float64
+	y float64
+}
+
+func (r *Renderer) Polygon(p1, p2, p3, p4 polyPoint, color string) {
 	path := vector.Path{}
-	path.MoveTo(float32(x1), float32(y1))
-	path.LineTo(float32(x2), float32(y2))
-	path.LineTo(float32(x3), float32(y3))
-	path.LineTo(float32(x4), float32(y4))
+	path.MoveTo(float32(p1.x), float32(p1.y))
+	path.LineTo(float32(p2.x), float32(p2.y))
+	path.LineTo(float32(p3.x), float32(p3.y))
+	path.LineTo(float32(p4.x), float32(p4.y))
 	path.Close()
 
 	red, green, blue, _ := r.util.ParseHexColor(color)
