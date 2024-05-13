@@ -107,12 +107,13 @@ func (r *Renderer) Background(background Background, dstImg *ebiten.Image, playe
 }
 
 type SegmentDetails struct {
-	P1          *util.Screenpoint
-	P2          *util.Screenpoint
-	Color       SegmentColor
-	TunnelStart bool
-	TunnelEnd   bool
-	InTunnel    bool
+	P1            *util.Screenpoint
+	P2            *util.Screenpoint
+	Color         SegmentColor
+	TunnelStart   bool
+	TunnelEnd     bool
+	InTunnel      bool
+	PlayerSegment bool // Segment the playey is currently on
 }
 
 func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
@@ -132,6 +133,8 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 		if sd.TunnelStart {
 			// Draw tunnel entrance wall
 			r.Polygon(0, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P2.BridgeTop, 0, sd.P2.BridgeTop, sd.Color.TunnelOuter)
+		} else if sd.PlayerSegment {
+			r.Polygon(0, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P2.BridgeTop, 0, sd.P2.BridgeTop, sd.Color.Tunnel)
 		}
 		// Left Wall
 		r.Polygon(sd.P1.X-sd.P1.W, sd.P1.Y, sd.P1.X-sd.P1.W, sd.P1.CielingY, sd.P2.X-sd.P2.W, sd.P2.CielingY, sd.P2.X-sd.P2.W, sd.P2.Y, sd.Color.Tunnel)

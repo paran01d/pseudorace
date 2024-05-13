@@ -347,6 +347,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	// Render the segments backwards
+	segments[0].PlayerSegment = true
 	for i := len(segments) - 1; i >= 0; i-- {
 		segment := segments[i]
 		g.render.Segment(screenWidth, screenHeight, g.config.lanes, segment)
