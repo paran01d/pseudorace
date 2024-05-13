@@ -270,7 +270,11 @@ func (g *Game) Update() error {
 		g.world.speed = g.util.Accelerate(g.world.speed, g.world.offRoadDecel, dt)
 	}
 
-	g.world.playerX = g.util.Limit(g.world.playerX, -2, 2)           // dont ever let player go too far out of bounds
+	if playerSegment.InTunnel {
+		g.world.playerX = g.util.Limit(g.world.playerX, -0.86, 0.86) // dont ever let player go past tunnel walls
+	} else {
+		g.world.playerX = g.util.Limit(g.world.playerX, -2, 2) // dont ever let player go too far out of bounds
+	}
 	g.world.speed = g.util.Limit(g.world.speed, 0, g.world.maxSpeed) // or exceed maxSpeed
 
 	return nil
