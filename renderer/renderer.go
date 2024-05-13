@@ -16,6 +16,7 @@ var ()
 
 type Renderer struct {
 	img           *ebiten.Image
+	tunnelImg     *ebiten.Image
 	debugImage    *ebiten.Image
 	util          *util.Util
 	whiteImage    *ebiten.Image
@@ -57,6 +58,7 @@ func NewRenderer(width, height int, util *util.Util) *Renderer {
 	return &Renderer{
 		debugImage:    ebiten.NewImage(width, height),
 		img:           ebiten.NewImage(width, height),
+		tunnelImg:     ebiten.NewImage(width, height),
 		util:          util,
 		whiteImage:    whiteImage,
 		whiteSubImage: whiteSubImage,
@@ -65,6 +67,7 @@ func NewRenderer(width, height int, util *util.Util) *Renderer {
 
 func (r *Renderer) Clear() {
 	r.img.Clear()
+	r.tunnelImg.Clear()
 }
 
 func (r *Renderer) DebugPrintAt(msg string, xpos, ypos int) {
@@ -137,7 +140,8 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 				polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
 				polyPoint{sd.P1.X - sd.P1.W, sd.P1.BridgeTop},
 				polyPoint{0, sd.P1.BridgeTop},
-				sd.Color.TunnelOuter,
+				sd.Color.Tunnel,
+				r.tunnelImg,
 			)
 		} else if sd.PlayerSegment {
 			r.Polygon(
@@ -146,6 +150,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 				polyPoint{sd.P1.X - sd.P1.W, sd.P1.BridgeTop},
 				polyPoint{0, sd.P1.BridgeTop},
 				sd.Color.Tunnel,
+				r.tunnelImg,
 			)
 		}
 		// Left Wall
@@ -154,6 +159,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			polyPoint{sd.P2.X - sd.P2.W, sd.P2.CielingY},
 			polyPoint{sd.P2.X - sd.P2.W, sd.P2.Y},
 			sd.Color.Tunnel,
+			r.tunnelImg,
 		)
 		if sd.TunnelStart {
 			// Draw tunnel entrance cieling
@@ -162,7 +168,8 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 				polyPoint{sd.P1.X - sd.P1.W, sd.P1.BridgeTop},
 				polyPoint{sd.P1.X + sd.P1.W, sd.P1.BridgeTop},
 				polyPoint{sd.P1.X + sd.P1.W, sd.P1.CielingY},
-				sd.Color.TunnelOuter,
+				sd.Color.Tunnel,
+				r.tunnelImg,
 			)
 		}
 		// cieling
@@ -172,6 +179,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			polyPoint{sd.P2.X + sd.P2.W, sd.P2.CielingY},
 			polyPoint{sd.P2.X - sd.P2.W, sd.P2.CielingY},
 			sd.Color.Tunnel,
+			r.tunnelImg,
 		)
 		// Road
 		r.Polygon(
@@ -180,6 +188,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			polyPoint{sd.P2.X + sd.P2.W, sd.P2.Y},
 			polyPoint{sd.P2.X - sd.P2.W, sd.P2.Y},
 			sd.Color.Road,
+			r.img,
 		)
 		if sd.TunnelStart {
 			// Draw tunnel entrance wall
@@ -188,7 +197,8 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 				polyPoint{sd.P1.X + sd.P1.W, sd.P1.Y},
 				polyPoint{sd.P1.X + sd.P1.W, sd.P1.BridgeTop},
 				polyPoint{float64(width), sd.P1.BridgeTop},
-				sd.Color.TunnelOuter,
+				sd.Color.Tunnel,
+				r.tunnelImg,
 			)
 		} else if sd.PlayerSegment {
 			r.Polygon(
@@ -197,6 +207,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 				polyPoint{sd.P1.X + sd.P1.W, sd.P1.BridgeTop},
 				polyPoint{float64(width), sd.P1.BridgeTop},
 				sd.Color.Tunnel,
+				r.tunnelImg,
 			)
 
 		}
@@ -207,6 +218,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			polyPoint{sd.P2.X + sd.P2.W, sd.P2.CielingY},
 			polyPoint{sd.P2.X + sd.P2.W, sd.P2.Y},
 			sd.Color.Tunnel,
+			r.tunnelImg,
 		)
 	} else {
 		// Grass
@@ -216,6 +228,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			polyPoint{sd.P1.X - sd.P1.W, sd.P2.Y + (sd.P1.Y - sd.P2.Y)},
 			polyPoint{0, sd.P2.Y + (sd.P1.Y - sd.P2.Y)},
 			sd.Color.Grass,
+			r.img,
 		)
 		// Road
 		r.Polygon(
@@ -224,6 +237,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			polyPoint{sd.P2.X - sd.P2.W, sd.P2.Y},
 			polyPoint{sd.P2.X - sd.P2.W - r2, sd.P2.Y},
 			sd.Color.Rumble,
+			r.img,
 		)
 		r.Polygon(
 			polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
@@ -231,6 +245,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			polyPoint{sd.P2.X + sd.P2.W, sd.P2.Y},
 			polyPoint{sd.P2.X - sd.P2.W, sd.P2.Y},
 			sd.Color.Road,
+			r.img,
 		)
 		r.Polygon(
 			polyPoint{sd.P1.X + sd.P1.W + r1, sd.P1.Y},
@@ -238,6 +253,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			polyPoint{sd.P2.X + sd.P2.W, sd.P2.Y},
 			polyPoint{sd.P2.X + sd.P2.W + r2, sd.P2.Y},
 			sd.Color.Rumble,
+			r.img,
 		)
 		// Grass
 		r.Polygon(
@@ -246,6 +262,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			polyPoint{sd.P1.X + sd.P1.W + r1, sd.P1.Y},
 			polyPoint{float64(width), sd.P2.Y + (sd.P1.Y - sd.P2.Y)},
 			sd.Color.Grass,
+			r.img,
 		)
 	}
 
@@ -261,6 +278,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 				polyPoint{lanex2 + l2/2, sd.P2.Y},
 				polyPoint{lanex2 - l2/2, sd.P2.Y},
 				sd.Color.Lane,
+				r.img,
 			)
 		}
 	}
@@ -270,12 +288,16 @@ func (r *Renderer) Image() *ebiten.Image {
 	return r.img
 }
 
+func (r *Renderer) TunnelImage() *ebiten.Image {
+	return r.tunnelImg
+}
+
 type polyPoint struct {
 	x float64
 	y float64
 }
 
-func (r *Renderer) Polygon(p1, p2, p3, p4 polyPoint, color string) {
+func (r *Renderer) Polygon(p1, p2, p3, p4 polyPoint, color string, img *ebiten.Image) {
 	path := vector.Path{}
 	path.MoveTo(float32(p1.x), float32(p1.y))
 	path.LineTo(float32(p2.x), float32(p2.y))
@@ -296,7 +318,7 @@ func (r *Renderer) Polygon(p1, p2, p3, p4 polyPoint, color string) {
 	op := &ebiten.DrawTrianglesOptions{}
 	op.AntiAlias = true
 
-	r.img.DrawTriangles(vs, is, r.whiteSubImage, op)
+	img.DrawTriangles(vs, is, r.whiteSubImage, op)
 }
 
 func (r *Renderer) rumbleWidth(projectedRoadWidth float64, lanes float64) float64 {
