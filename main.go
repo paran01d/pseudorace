@@ -117,9 +117,9 @@ func (g *Game) Initialize() {
 		playerMode:  "straight",
 		position:    0,
 		speed:       0,
-		maxSpeed:    float64(380),
+		maxSpeed:    float64(100),
 	}
-	g.world.accel = g.world.maxSpeed / 5
+	g.world.accel = g.world.maxSpeed / 10
 	g.world.breaking = -g.world.maxSpeed
 	g.world.decel = -g.world.maxSpeed / 5
 	g.world.offRoadDecel = -g.world.maxSpeed / 2
@@ -406,7 +406,7 @@ func main() {
 	game.road = track
 	//game.world.trackLength = game.road.BuildCircleTrack()
 	//game.world.trackLength = game.road.BuildTrack()
-	//	game.world.trackLength = game.road.BuildHillyTrack()
+	// game.world.trackLength = game.road.BuildHillyTrack()
 	game.world.trackLength = game.road.BuildTrackWithTunnel()
 
 	if err := ebiten.RunGame(game); err != nil {
