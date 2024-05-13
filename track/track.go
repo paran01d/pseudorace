@@ -35,7 +35,7 @@ func NewTrack(rumbleLength int, segmentLength int, playerZ float64, util *util.U
 	return &Track{
 		Length:        map[string]float64{"none": 0, "short": 25, "medium": 50, "long": 100},
 		Curve:         map[string]float64{"none": 0, "easy": 2, "medium": 4, "hard": 6},
-		Hill:          map[string]float64{"none": 0, "low": 20, "medium": 40, "high": 60},
+		Hill:          map[string]float64{"none": 0, "low": 80, "medium": 140, "high": 200},
 		colors:        colors,
 		RumbleLength:  rumbleLength,
 		SegmentLength: segmentLength,
