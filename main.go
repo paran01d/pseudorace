@@ -257,11 +257,15 @@ func (g *Game) Update() error {
 	}
 
 	g.world.playerX = g.world.playerX - dx*speedPercent*playerSegment.Curve*g.config.centrifugal
+	reversing := false
 
 	if ebiten.IsKeyPressed(ebiten.KeyUp) {
 		g.world.speed = g.util.Accelerate(g.world.speed, g.world.accel, dt)
 	} else if ebiten.IsKeyPressed(ebiten.KeyDown) {
 		g.world.speed = g.util.Accelerate(g.world.speed, g.world.breaking, dt)
+		if g.world.speed < 0 {
+			reversing = true
+		}
 	} else {
 		g.world.speed = g.util.Accelerate(g.world.speed, g.world.decel, dt)
 	}
@@ -271,11 +275,15 @@ func (g *Game) Update() error {
 	}
 
 	if playerSegment.InTunnel {
-		g.world.playerX = g.util.Limit(g.world.playerX, -0.86, 0.86) // dont ever let player go past tunnel walls
+		g.world.playerX = g.util.Limit(g.world.playerX, -0.82, 0.82) // dont ever let player go past tunnel walls
 	} else {
 		g.world.playerX = g.util.Limit(g.world.playerX, -2, 2) // dont ever let player go too far out of bounds
 	}
-	g.world.speed = g.util.Limit(g.world.speed, 0, g.world.maxSpeed) // or exceed maxSpeed
+	if reversing {
+		g.world.speed = g.util.Limit(g.world.speed, -30, g.world.maxSpeed) // or exceed maxSpeed
+	} else {
+		g.world.speed = g.util.Limit(g.world.speed, 0, g.world.maxSpeed) // or exceed maxSpeed
+	}
 
 	return nil
 }
