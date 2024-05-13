@@ -39,6 +39,7 @@ type gameConfig struct {
 	drawPlayer     bool
 	drawDebug      bool
 	drawRoad       bool
+	drawTunnel     bool
 }
 
 type worldValues struct {
@@ -103,9 +104,10 @@ func (g *Game) Initialize() {
 		centrifugal:    0.3,
 		drawBackground: true,
 		drawPlayer:     true,
-		drawFog:        false,
+		drawFog:        true,
 		drawRoad:       true,
 		drawDebug:      true,
+		drawTunnel:     true,
 	}
 
 	// Setup the world
@@ -164,7 +166,7 @@ func (g *Game) generateFog() {
 	fogRGBA := image.NewRGBA(image.Rect(0, 0, w, fogHeight))
 	for j := 0; j < fogHeight; j++ {
 		a := uint32(float64(fogHeight-1-j) * 0xff / (fogHeight - 1))
-		clr := color.RGBA{0x00, 0x51, 0x08, 0xff}
+		clr := color.RGBA{0x80, 0x80, 0x80, 0xff}
 		r, g, b, oa := uint32(clr.R), uint32(clr.G), uint32(clr.B), uint32(clr.A)
 		clr.R = uint8(r * a / oa)
 		clr.G = uint8(g * a / oa)
@@ -227,6 +229,10 @@ func (g *Game) Update() error {
 
 	if inpututil.KeyPressDuration(ebiten.KeyF) == 1 {
 		g.config.drawFog = !g.config.drawFog
+	}
+
+	if inpututil.KeyPressDuration(ebiten.KeyT) == 1 {
+		g.config.drawTunnel = !g.config.drawTunnel
 	}
 
 	if inpututil.KeyPressDuration(ebiten.KeyR) == 1 {
@@ -373,12 +379,17 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	roadImg := g.render.Image()
 	if g.config.drawFog {
 		fogop := &ebiten.DrawImageOptions{}
-		fogop.GeoM.Translate(0, maxy-5)
+		fogop.GeoM.Translate(0, maxy-8)
 		roadImg.DrawImage(g.fogImage, fogop)
 	}
+	if g.config.drawTunnel {
+		roadImg.DrawImage(g.render.TunnelImage(), nil)
+	}
+
 	if g.config.drawRoad {
 		screen.DrawImage(roadImg, nil)
 	}
+
 	g.render.Clear()
 
 	//speedPercent := g.world.speed / g.world.maxSpeed
