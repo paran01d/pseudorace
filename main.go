@@ -92,13 +92,13 @@ func (g *Game) Initialize() {
 
 	// Set config
 	g.config = gameConfig{
-		roadWidth:      4000,
+		roadWidth:      3000,
 		rumbleLength:   3,
-		segmentLength:  500,
+		segmentLength:  80,
 		lanes:          3,
 		fieldOfView:    95,
 		cameraHeight:   2200,
-		drawDistance:   200,
+		drawDistance:   100,
 		fogDensity:     5,
 		centrifugal:    0.3,
 		drawBackground: true,
@@ -112,7 +112,7 @@ func (g *Game) Initialize() {
 	g.world = worldValues{
 		resolution:  0,
 		trackLength: 0,
-		cameraDepth: 0.4 / math.Tan(((g.config.fieldOfView/2)*math.Pi)/180),
+		cameraDepth: 1 / math.Tan((g.config.fieldOfView / 2)) * (math.Pi / 180),
 		playerX:     0,
 		playerMode:  "straight",
 		position:    0,
@@ -311,7 +311,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			g.world.position-camzmodifier,
 			g.world.cameraDepth,
 			screenWidth,
-			screenHeight-20,
+			screenHeight,
 			g.config.roadWidth,
 		)
 		g.util.Project(
@@ -321,7 +321,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			g.world.position-camzmodifier,
 			g.world.cameraDepth,
 			screenWidth,
-			screenHeight-20,
+			screenHeight,
 			g.config.roadWidth,
 		)
 
