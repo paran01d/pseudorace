@@ -137,8 +137,8 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			// Draw tunnel entrance wall
 			r.Polygon(
 				polyPoint{0, sd.P1.Y},
-				polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
-				polyPoint{sd.P1.X - sd.P1.W, sd.P1.BridgeTop},
+				polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.Y},
+				polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.BridgeTop},
 				polyPoint{0, sd.P1.BridgeTop},
 				sd.Color.TunnelOuter,
 				r.tunnelImg,
@@ -146,28 +146,28 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 		} else if sd.PlayerSegment {
 			r.Polygon(
 				polyPoint{0, sd.P1.Y},
-				polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
-				polyPoint{sd.P1.X - sd.P1.W, sd.P1.BridgeTop},
+				polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.Y},
+				polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.BridgeTop},
 				polyPoint{0, sd.P1.BridgeTop},
 				sd.Color.Tunnel,
 				r.tunnelImg,
 			)
 		}
 		// Left Wall
-		r.Polygon(polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
-			polyPoint{sd.P1.X - sd.P1.W, sd.P1.CielingY},
-			polyPoint{sd.P2.X - sd.P2.W, sd.P2.CielingY},
-			polyPoint{sd.P2.X - sd.P2.W, sd.P2.Y},
+		r.Polygon(polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.Y + 0.5},
+			polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.CielingY},
+			polyPoint{sd.P2.X - sd.P2.W + 0.5, sd.P2.CielingY},
+			polyPoint{sd.P2.X - sd.P2.W + 0.5, sd.P2.Y + 0.5},
 			sd.Color.Tunnel,
 			r.tunnelImg,
 		)
 		if sd.TunnelStart {
 			// Draw tunnel entrance cieling
 			r.Polygon(
-				polyPoint{sd.P1.X - sd.P1.W, sd.P1.CielingY},
-				polyPoint{sd.P1.X - sd.P1.W, sd.P1.BridgeTop},
-				polyPoint{sd.P1.X + sd.P1.W, sd.P1.BridgeTop},
-				polyPoint{sd.P1.X + sd.P1.W, sd.P1.CielingY},
+				polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.CielingY},
+				polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.BridgeTop},
+				polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.BridgeTop},
+				polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.CielingY},
 				sd.Color.TunnelOuter,
 				r.tunnelImg,
 			)
@@ -194,8 +194,8 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			// Draw tunnel entrance wall
 			r.Polygon(
 				polyPoint{float64(width), sd.P1.Y},
-				polyPoint{sd.P1.X + sd.P1.W, sd.P1.Y},
-				polyPoint{sd.P1.X + sd.P1.W, sd.P1.BridgeTop},
+				polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.Y},
+				polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.BridgeTop},
 				polyPoint{float64(width), sd.P1.BridgeTop},
 				sd.Color.TunnelOuter,
 				r.tunnelImg,
@@ -203,8 +203,8 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 		} else if sd.PlayerSegment {
 			r.Polygon(
 				polyPoint{float64(width), sd.P1.Y},
-				polyPoint{sd.P1.X + sd.P1.W, sd.P1.Y},
-				polyPoint{sd.P1.X + sd.P1.W, sd.P1.BridgeTop},
+				polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.Y},
+				polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.BridgeTop},
 				polyPoint{float64(width), sd.P1.BridgeTop},
 				sd.Color.TunnelOuter,
 				r.tunnelImg,
@@ -213,10 +213,10 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 		}
 		// Right Wall
 		r.Polygon(
-			polyPoint{sd.P1.X + sd.P1.W, sd.P1.Y},
-			polyPoint{sd.P1.X + sd.P1.W, sd.P1.CielingY},
-			polyPoint{sd.P2.X + sd.P2.W, sd.P2.CielingY},
-			polyPoint{sd.P2.X + sd.P2.W, sd.P2.Y},
+			polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.Y + 0.5},
+			polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.CielingY},
+			polyPoint{sd.P2.X + sd.P2.W - 0.5, sd.P2.CielingY},
+			polyPoint{sd.P2.X + sd.P2.W - 0.5, sd.P2.Y + 0.5},
 			sd.Color.Tunnel,
 			r.tunnelImg,
 		)
@@ -224,9 +224,9 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 		// Grass
 		r.Polygon(
 			polyPoint{0, sd.P2.Y},
-			polyPoint{sd.P1.X - sd.P2.W, sd.P2.Y},
-			polyPoint{sd.P1.X - sd.P1.W, sd.P2.Y + (sd.P1.Y - sd.P2.Y)},
-			polyPoint{0, sd.P2.Y + (sd.P1.Y - sd.P2.Y)},
+			polyPoint{sd.P1.X + sd.P2.W, sd.P2.Y},
+			polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
+			polyPoint{0, sd.P1.Y},
 			sd.Color.Grass,
 			r.img,
 		)
