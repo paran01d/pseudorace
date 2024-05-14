@@ -85,8 +85,8 @@ func (g *Game) Initialize() {
 	g.fogcolor = "#005108"
 
 	g.colors = map[string]renderer.SegmentColor{
-		"LIGHT":  {Road: "#6B6B6B", Grass: "#10AA10", Rumble: "#555555", Lane: "#CCCCCC", Tunnel: "#808080", TunnelOuter: "#BE1BFF"},
-		"DARK":   {Road: "#696969", Grass: "#009A00", Rumble: "#BE1B08", Tunnel: "#373737", TunnelOuter: "#BE1B08"},
+		"LIGHT":  {Road: "#6B6B6B", Grass: "#10AA10", Rumble: "#555555", Lane: "#CCCCCC", Tunnel: "#373737", TunnelOuter: "#808080"},
+		"DARK":   {Road: "#696969", Grass: "#009A00", Rumble: "#BE1B08", Tunnel: "#373737", TunnelOuter: "#808080"},
 		"START":  {Road: "#ffffff", Grass: "#ffffff", Rumble: "#ffffff", Tunnel: "#000000"},
 		"FINISH": {Road: "#000000", Grass: "#000000", Rumble: "#000000", Tunnel: "#000000"},
 	}
@@ -99,7 +99,7 @@ func (g *Game) Initialize() {
 		lanes:          3,
 		fieldOfView:    95,
 		cameraHeight:   2200,
-		drawDistance:   100,
+		drawDistance:   200,
 		fogDensity:     5,
 		centrifugal:    0.3,
 		drawBackground: true,

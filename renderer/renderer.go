@@ -140,7 +140,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 				polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
 				polyPoint{sd.P1.X - sd.P1.W, sd.P1.BridgeTop},
 				polyPoint{0, sd.P1.BridgeTop},
-				sd.Color.Tunnel,
+				sd.Color.TunnelOuter,
 				r.tunnelImg,
 			)
 		} else if sd.PlayerSegment {
@@ -168,7 +168,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 				polyPoint{sd.P1.X - sd.P1.W, sd.P1.BridgeTop},
 				polyPoint{sd.P1.X + sd.P1.W, sd.P1.BridgeTop},
 				polyPoint{sd.P1.X + sd.P1.W, sd.P1.CielingY},
-				sd.Color.Tunnel,
+				sd.Color.TunnelOuter,
 				r.tunnelImg,
 			)
 		}
@@ -197,7 +197,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 				polyPoint{sd.P1.X + sd.P1.W, sd.P1.Y},
 				polyPoint{sd.P1.X + sd.P1.W, sd.P1.BridgeTop},
 				polyPoint{float64(width), sd.P1.BridgeTop},
-				sd.Color.Tunnel,
+				sd.Color.TunnelOuter,
 				r.tunnelImg,
 			)
 		} else if sd.PlayerSegment {
@@ -206,7 +206,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 				polyPoint{sd.P1.X + sd.P1.W, sd.P1.Y},
 				polyPoint{sd.P1.X + sd.P1.W, sd.P1.BridgeTop},
 				polyPoint{float64(width), sd.P1.BridgeTop},
-				sd.Color.Tunnel,
+				sd.Color.TunnelOuter,
 				r.tunnelImg,
 			)
 
