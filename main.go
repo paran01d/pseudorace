@@ -161,11 +161,11 @@ func (g *Game) Initialize() {
 }
 
 func (g *Game) generateFog() {
-	const fogHeight = 16
+	const fogHeight = 32
 	w := screenWidth
 	fogRGBA := image.NewRGBA(image.Rect(0, 0, w, fogHeight))
 	for j := 0; j < fogHeight; j++ {
-		a := uint32(float64(fogHeight-1-j) * 0xff / (fogHeight - 1))
+		a := uint32(float64(fogHeight-1-j) * 0x0f / (fogHeight - 1))
 		clr := color.RGBA{0x80, 0x80, 0x80, 0xff}
 		r, g, b, oa := uint32(clr.R), uint32(clr.G), uint32(clr.B), uint32(clr.A)
 		clr.R = uint8(r * a / oa)
@@ -379,7 +379,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	roadImg := g.render.Image()
 	if g.config.drawFog {
 		fogop := &ebiten.DrawImageOptions{}
-		fogop.GeoM.Translate(0, maxy-8)
+		fogop.GeoM.Translate(0, maxy-16)
 		roadImg.DrawImage(g.fogImage, fogop)
 	}
 	if g.config.drawTunnel {
@@ -429,9 +429,9 @@ func main() {
 	game.util = util
 	game.road = track
 	//game.world.trackLength = game.road.BuildCircleTrack()
-	//game.world.trackLength = game.road.BuildTrack()
+	game.world.trackLength = game.road.BuildTrack()
 	// game.world.trackLength = game.road.BuildHillyTrack()
-	game.world.trackLength = game.road.BuildTrackWithTunnel()
+	//game.world.trackLength = game.road.BuildTrackWithTunnel()
 
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
