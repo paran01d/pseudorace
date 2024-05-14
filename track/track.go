@@ -119,11 +119,11 @@ func (t *Track) addTunnel(num float64) {
 	t.addRoad(num, num, num, 0.0, 0.0, false, true, true)
 }
 
-func (t *Track) addStraight(num, hill float64) {
+func (t *Track) addStraight(num, hill float64, tunnelStart, tunnelEnd, inTunnel bool) {
 	if num == 0 {
 		num = t.Length["medium"]
 	}
-	t.addRoad(num, num, num, 0.0, hill, false, false, false)
+	t.addRoad(num, num, num, 0.0, hill, tunnelStart, tunnelEnd, inTunnel)
 }
 
 func (t *Track) addCurve(num, curve, hill float64, startTunnel bool, endTunnel bool, inTunnel bool) {
@@ -148,7 +148,7 @@ func (t *Track) BuildTrackWithTunnel() int {
 	t.Segments = make([]Segment, 0)
 
 	// The track
-	t.addStraight(t.Length["short"], 0.0)
+	t.addStraight(t.Length["short"], 0.0, false, false, false)
 	t.addTunnel(t.Length["medium"])
 
 	// Start and Finish markers
@@ -165,16 +165,28 @@ func (t *Track) BuildTrack() int {
 	t.Segments = make([]Segment, 0)
 
 	// The track
-	t.addStraight(t.Length["short"]/4, 0.0)
+	t.addStraight(t.Length["short"]/4, 0.0, false, false, false)
+	t.addStraight(t.Length["short"]/6, 0.0, true, true, true)
+	t.addStraight(t.Length["short"]/4, 0.0, false, false, false)
+	t.addStraight(t.Length["short"]/6, 0.0, true, true, true)
 	t.addSCurves()
-	t.addStraight(t.Length["long"], 0.0)
+	t.addStraight(t.Length["long"], 0.0, false, false, false)
 	t.addCurve(t.Length["medium"], t.Curve["medium"], 0.0, false, false, false)
 	t.addCurve(t.Length["long"], t.Curve["medium"], 0.0, false, false, false)
-	t.addStraight(0.0, 0.0)
+	t.addStraight(0.0, 0.0, false, false, false)
 	t.addSCurves()
 	t.addCurve(t.Length["long"], -t.Curve["medium"], 0.0, false, false, false)
 	t.addCurve(t.Length["long"], t.Curve["medium"], 0.0, false, false, false)
-	t.addStraight(0.0, 0.0)
+	t.addStraight(0.0, 0.0, true, false, true)
+	t.addStraight(0.0, 0.0, false, false, true)
+	t.addStraight(0.0, 0.0, false, true, true)
+	t.addStraight(t.Length["short"], t.Hill["high"]*2, false, false, false)
+	t.addStraight(t.Length["short"], t.Hill["high"], true, false, false)
+	t.addStraight(t.Length["short"], t.Hill["high"], false, false, false)
+	t.addStraight(t.Length["short"], t.Hill["high"], false, false, false)
+	t.addStraight(t.Length["short"], t.Hill["low"], false, false, false)
+	t.addDownhillToEnd(150)
+
 	t.addSCurves()
 	t.addCurve(t.Length["long"], -t.Curve["easy"], 0.0, false, false, false)
 	t.addDownhillToEnd(0)
@@ -192,11 +204,11 @@ func (t *Track) BuildTrack() int {
 func (t *Track) BuildHillyTrack() int {
 	t.Segments = make([]Segment, 0)
 
-	t.addStraight(t.Length["short"], t.Hill["high"]*2)
-	t.addStraight(t.Length["short"], t.Hill["high"])
-	t.addStraight(t.Length["short"], t.Hill["high"])
-	t.addStraight(t.Length["short"], t.Hill["high"])
-	t.addStraight(t.Length["short"], t.Hill["low"])
+	t.addStraight(t.Length["short"], t.Hill["high"]*2, false, false, false)
+	t.addStraight(t.Length["short"], t.Hill["high"], true, false, false)
+	t.addStraight(t.Length["short"], t.Hill["high"], false, false, false)
+	t.addStraight(t.Length["short"], t.Hill["high"], false, false, false)
+	t.addStraight(t.Length["short"], t.Hill["low"], false, false, false)
 	t.addDownhillToEnd(150)
 
 	// Start and Finish markers
