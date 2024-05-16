@@ -112,7 +112,7 @@ func (g *Game) Initialize() {
 
 	// Setup the world
 	g.world = worldValues{
-		resolution:  0,
+		resolution:  768 / 480,
 		trackLength: 0,
 		cameraDepth: 1 / math.Tan((g.config.fieldOfView / 2)) * (math.Pi / 180),
 		playerX:     0,
@@ -371,11 +371,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.render.Segment(screenWidth, screenHeight, g.config.lanes, segment)
 	}
 
-	if g.config.drawDebug {
-		g.render.ResetDebug()
-		g.render.DebugPrintAt(fmt.Sprintf("TPS: %f Speed: %f Position: %f PlayerX: %f PlayerY: %f maxy: %f", ebiten.CurrentTPS(), g.world.speed, g.world.position, g.world.playerX, playerY, maxy), 50, 50)
-	}
-
 	roadImg := g.render.Image()
 	if g.config.drawFog {
 		fogop := &ebiten.DrawImageOptions{}
@@ -392,9 +387,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	g.render.Clear()
 
-	//speedPercent := g.world.speed / g.world.maxSpeed
+	speedPercent := g.world.speed / g.world.maxSpeed
 
-	//bounce := (1.5 * rand.Float64() * speedPercent * float64(g.world.resolution)) * []float64{-1, 1}[rand.Intn(2)]
+	bounceBase := (1.5 * rand.Float64() * speedPercent * float64(g.world.resolution))
+	bounceModify := []float64{-1, 1}[rand.Intn(2)]
+	bounce := bounceBase * bounceModify
 	op := &ebiten.DrawImageOptions{}
 	destW := ((128 * g.world.screenScale * screenWidth) / 2) * (g.world.spriteScale * g.config.roadWidth)
 	destH := ((128 * g.world.screenScale * screenHeight) / 2) * (g.world.spriteScale * g.config.roadWidth)
@@ -402,13 +399,15 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	destX := ((screenWidth - destW) / 2)
 	//destY := (screenHeight + bounce - destH)
 	//destY := (screenHeight - destH) - (g.world.cameraDepth/g.world.playerZ*g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent))*((screenHeight-destH)/2) // + bounce
-	destY := float64(screenHeight-destH) - (g.world.cameraDepth / g.world.playerZ * g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent)) + 10
+	destY := float64((screenHeight+bounce)-destH) - (g.world.cameraDepth / g.world.playerZ * g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent))
 	op.GeoM.Scale(destW/128, destH/128)
 	op.GeoM.Translate(destX, destY)
 	if g.config.drawPlayer {
 		screen.DrawImage(g.playerImage.SubImage(g.playerSprites[g.world.playerMode].Rect()).(*ebiten.Image), op)
 	}
 	if g.config.drawDebug {
+		g.render.ResetDebug()
+		g.render.DebugPrintAt(fmt.Sprintf("TPS: %f Speed: %f Position: %f desty: %f bounce: %f bounceBase: %f bounceModify: %f, res: %f", ebiten.CurrentTPS(), speedPercent, g.world.position, destY, bounce, bounceBase, bounceModify, float64(g.world.resolution)), 50, 50)
 		screen.DrawImage(g.render.DebugImage(), nil)
 	}
 }
