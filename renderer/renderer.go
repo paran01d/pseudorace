@@ -206,7 +206,7 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 				polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.Y},
 				polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.BridgeTop},
 				polyPoint{float64(width), sd.P1.BridgeTop},
-				sd.Color.TunnelOuter,
+				sd.Color.Tunnel,
 				r.tunnelImg,
 			)
 
