@@ -1,0 +1,14 @@
+image: images/player.png
+
+rows: 4
+cols: 2
+sizex: 128
+sizey: 128
+
+sprites: [
+  speedy,
+  bug,
+  pink,
+  porsche,
+  truck,
+]

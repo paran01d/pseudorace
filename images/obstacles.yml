@@ -1,0 +1,22 @@
+image: images/obstacles.png
+
+rows: 4
+cols: 4
+sizex: 256
+sizey: 256
+
+sprites: [
+  rock,
+  boulder,
+  cliff,
+  plant,
+  smalltree,
+  cactus,
+  tower,
+  pine,
+  twigs,
+  palm,
+  stump,
+  tree2,
+  tree3,
+]

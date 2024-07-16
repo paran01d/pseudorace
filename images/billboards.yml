@@ -1,0 +1,18 @@
+image: images/obstacles.png
+
+rows: 4
+cols: 3
+sizex: 256
+sizey: 256
+
+sprites: [
+  whale,
+  icecream,
+  dirtbike,
+  sega,
+  danke,
+  planner,
+  code,
+  snakes,
+  redmond,
+]

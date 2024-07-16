@@ -76,6 +76,15 @@ type Game struct {
 	fogImage      *ebiten.Image
 	bgImage       *ebiten.Image
 	road          *track.Track
+
+	carImage   *ebiten.Image
+	carSprites map[string]*spritesheet.Sprite
+
+	obstacleImage   *ebiten.Image
+	obstacleSprites map[string]*spritesheet.Sprite
+
+	billboardImage   *ebiten.Image
+	billboardSprites map[string]*spritesheet.Sprite
 }
 
 func (g *Game) Initialize() {
@@ -148,12 +157,25 @@ func (g *Game) Initialize() {
 
 	g.render.SetupBgPart(g.background)
 
-	err, playerImage, playerSprites := g.loadSpriteSheet("images/player.yml")
+	err, g.playerImage, g.playerSprites = g.loadSpriteSheet("images/player.yml")
 	if err != nil {
 		log.Fatal(err)
 	}
-	g.playerImage = playerImage
-	g.playerSprites = playerSprites
+
+	err, g.carImage, g.carSprites = g.loadSpriteSheet("images/cars.yml")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err, g.billboardImage, g.billboardSprites = g.loadSpriteSheet("images/billboards.yml")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err, g.obstacleImage, g.obstacleSprites = g.loadSpriteSheet("images/obstacles.yml")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	g.generateFog()
 	g.bgImage = ebiten.NewImage(1024, 768)
