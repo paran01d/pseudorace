@@ -3,7 +3,9 @@ package track
 import (
 	"log"
 
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/paran01d/pseudorace/renderer"
+	"github.com/paran01d/pseudorace/spritesheet"
 	"github.com/paran01d/pseudorace/util"
 )
 
@@ -29,6 +31,7 @@ type Segment struct {
 	TunnelStart bool
 	TunnelEnd   bool
 	InTunnel    bool
+	Sprites     []*renderer.Sprite
 }
 
 func NewTrack(rumbleLength int, segmentLength int, playerZ float64, util *util.Util, colors map[string]renderer.SegmentColor) *Track {
@@ -42,6 +45,11 @@ func NewTrack(rumbleLength int, segmentLength int, playerZ float64, util *util.U
 		playerZ:       playerZ,
 		util:          util,
 	}
+}
+
+func (t *Track) addSprite(n int, sprite *ebiten.Image, offset float64) {
+	segment := t.Segments[n]
+	segment.Sprites = append(segment.Sprites, &renderer.Sprite{Sprite: sprite, Offset: offset})
 }
 
 func (t *Track) addSegment(curve float64, y float64, tunnelStart, tunnelEnd, inTunnel bool) {
@@ -161,7 +169,7 @@ func (t *Track) BuildTrackWithTunnel() int {
 	return len(t.Segments) * t.SegmentLength
 }
 
-func (t *Track) BuildTrack() int {
+func (t *Track) BuildTrack(obstacleImage *ebiten.Image, obstacleSprites map[string]*spritesheet.Sprite) int {
 	t.Segments = make([]Segment, 0)
 
 	// The track
@@ -194,6 +202,7 @@ func (t *Track) BuildTrack() int {
 	// Start and Finish markers
 	t.Segments[t.FindSegment(int(t.playerZ)).Index+2].Color = t.colors["START"]
 	t.Segments[t.FindSegment(int(t.playerZ)).Index+3].Color = t.colors["START"]
+	t.addSprite(t.FindSegment(int(t.playerZ)).Index+3, obstacleImage.SubImage(obstacleSprites["tower"].Rect()).(*ebiten.Image), 1)
 	for n := 0; n < t.RumbleLength; n++ {
 		t.Segments[len(t.Segments)-1-n].Color = t.colors["FINISH"]
 	}

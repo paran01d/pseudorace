@@ -117,6 +117,33 @@ type SegmentDetails struct {
 	TunnelEnd     bool
 	InTunnel      bool
 	PlayerSegment bool // Segment the playey is currently on
+	Sprites       []*Sprite
+}
+
+type Sprite struct {
+	Sprite *ebiten.Image
+	Offset float64
+}
+
+func (r *Renderer) Sprite(width, height, resolution, roadWidth float64, sprite *ebiten.Image, scale float64, destX, destY, offsetX, offsetY, clipY float64) {
+	screenX := width / 2 * (1 + destX/2)
+	screenY := height / 2 * (1 - destY/2)
+	scale = scale * width / 1024
+	w := float64(sprite.Bounds().Dx()) * scale
+	h := float64(sprite.Bounds().Dy()) * scale
+
+	// Clip
+	if screenY > clipY {
+		return
+	}
+
+	// Draw
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(-w/2, -h/2)
+	op.GeoM.Translate(screenX, screenY)
+	op.GeoM.Scale(scale, scale)
+	op.GeoM.Translate(w/2+offsetX, h/2+offsetY)
+	r.img.DrawImage(sprite, op)
 }
 
 func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
@@ -133,7 +160,33 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 
 	// First side of road
 	if sd.InTunnel {
+		// Left Wall
+		r.Polygon(polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.Y + 0.5},
+			polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.CielingY},
+			polyPoint{sd.P2.X - sd.P2.W + 0.5, sd.P2.CielingY},
+			polyPoint{sd.P2.X - sd.P2.W + 0.5, sd.P2.Y + 0.5},
+			sd.Color.Tunnel,
+			r.tunnelImg,
+		)
+		// cieling
+		r.Polygon(
+			polyPoint{sd.P1.X - sd.P1.W, sd.P1.CielingY},
+			polyPoint{sd.P1.X + sd.P1.W, sd.P1.CielingY},
+			polyPoint{sd.P2.X + sd.P2.W, sd.P2.CielingY},
+			polyPoint{sd.P2.X - sd.P2.W, sd.P2.CielingY},
+			sd.Color.Tunnel,
+			r.tunnelImg,
+		)
 		if sd.TunnelStart {
+			// Draw tunnel entrance cieling
+			r.Polygon(
+				polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.CielingY},
+				polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.BridgeTop},
+				polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.BridgeTop},
+				polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.CielingY},
+				sd.Color.TunnelOuter,
+				r.tunnelImg,
+			)
 			// Draw tunnel entrance wall
 			r.Polygon(
 				polyPoint{0, sd.P1.Y},
@@ -153,34 +206,6 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 				r.tunnelImg,
 			)
 		}
-		// Left Wall
-		r.Polygon(polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.Y + 0.5},
-			polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.CielingY},
-			polyPoint{sd.P2.X - sd.P2.W + 0.5, sd.P2.CielingY},
-			polyPoint{sd.P2.X - sd.P2.W + 0.5, sd.P2.Y + 0.5},
-			sd.Color.Tunnel,
-			r.tunnelImg,
-		)
-		if sd.TunnelStart {
-			// Draw tunnel entrance cieling
-			r.Polygon(
-				polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.CielingY},
-				polyPoint{sd.P1.X - sd.P1.W + 0.5, sd.P1.BridgeTop},
-				polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.BridgeTop},
-				polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.CielingY},
-				sd.Color.TunnelOuter,
-				r.tunnelImg,
-			)
-		}
-		// cieling
-		r.Polygon(
-			polyPoint{sd.P1.X - sd.P1.W, sd.P1.CielingY},
-			polyPoint{sd.P1.X + sd.P1.W, sd.P1.CielingY},
-			polyPoint{sd.P2.X + sd.P2.W, sd.P2.CielingY},
-			polyPoint{sd.P2.X - sd.P2.W, sd.P2.CielingY},
-			sd.Color.Tunnel,
-			r.tunnelImg,
-		)
 		// Road
 		r.Polygon(
 			polyPoint{sd.P1.X - sd.P1.W, sd.P1.Y},
@@ -190,6 +215,16 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			sd.Color.Road,
 			r.img,
 		)
+		// Right Wall
+		r.Polygon(
+			polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.Y + 0.5},
+			polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.CielingY},
+			polyPoint{sd.P2.X + sd.P2.W - 0.5, sd.P2.CielingY},
+			polyPoint{sd.P2.X + sd.P2.W - 0.5, sd.P2.Y + 0.5},
+			sd.Color.Tunnel,
+			r.tunnelImg,
+		)
+
 		if sd.TunnelStart {
 			// Draw tunnel entrance wall
 			r.Polygon(
@@ -211,15 +246,6 @@ func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
 			)
 
 		}
-		// Right Wall
-		r.Polygon(
-			polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.Y + 0.5},
-			polyPoint{sd.P1.X + sd.P1.W - 0.5, sd.P1.CielingY},
-			polyPoint{sd.P2.X + sd.P2.W - 0.5, sd.P2.CielingY},
-			polyPoint{sd.P2.X + sd.P2.W - 0.5, sd.P2.Y + 0.5},
-			sd.Color.Tunnel,
-			r.tunnelImg,
-		)
 	} else {
 		// Grass
 		r.Polygon(

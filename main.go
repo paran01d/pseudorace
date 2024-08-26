@@ -381,6 +381,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			TunnelStart: segment.TunnelStart,
 			TunnelEnd:   segment.TunnelEnd,
 			InTunnel:    segment.InTunnel,
+			Sprites:     segment.Sprites,
 		})
 
 		maxy = segment.P1.Screen.Y
@@ -391,6 +392,16 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	for i := len(segments) - 1; i >= 0; i-- {
 		segment := segments[i]
 		g.render.Segment(screenWidth, screenHeight, g.config.lanes, segment)
+		for _, sprite := range segment.Sprites {
+			spriteScale := segment.P1.Scale
+			spriteX := segment.P1.X + (spriteScale * sprite.Offset * g.config.roadWidth * (screenWidth / 2))
+			spriteY := segment.P1.Y
+			offsetX := 0.0
+			if sprite.Offset < 0 {
+				offsetX = -1
+			}
+			g.render.Sprite(screenWidth, screenHeight, float64(g.world.resolution), g.config.roadWidth, sprite.Sprite, spriteScale, spriteX, spriteY, offsetX, -1, 0)
+		}
 	}
 
 	roadImg := g.render.Image()
@@ -450,7 +461,7 @@ func main() {
 	game.util = util
 	game.road = track
 	//game.world.trackLength = game.road.BuildCircleTrack()
-	game.world.trackLength = game.road.BuildTrack()
+	game.world.trackLength = game.road.BuildTrack(game.obstacleImage, game.obstacleSprites)
 	// game.world.trackLength = game.road.BuildHillyTrack()
 	//game.world.trackLength = game.road.BuildTrackWithTunnel()
 
