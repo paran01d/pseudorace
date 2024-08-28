@@ -1,8 +1,6 @@
 package track
 
 import (
-	"log"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/paran01d/pseudorace/renderer"
 	"github.com/paran01d/pseudorace/spritesheet"
@@ -48,7 +46,7 @@ func NewTrack(rumbleLength int, segmentLength int, playerZ float64, util *util.U
 }
 
 func (t *Track) addSprite(n int, sprite *ebiten.Image, offset float64) {
-	segment := t.Segments[n]
+	segment := &t.Segments[n]
 	segment.Sprites = append(segment.Sprites, &renderer.Sprite{Sprite: sprite, Offset: offset})
 }
 
@@ -74,14 +72,14 @@ func (t *Track) addSegment(curve float64, y float64, tunnelStart, tunnelEnd, inT
 				Z: float64((n + 1) * t.SegmentLength),
 			},
 		},
-		Color: color,
-		Curve: curve,
+		Color:   color,
+		Curve:   curve,
+		Sprites: make([]*renderer.Sprite, 0),
 	}
 
 	segment.TunnelStart = tunnelStart
 	segment.TunnelEnd = tunnelEnd
 	segment.InTunnel = inTunnel
-	log.Printf("Segment: %+v", segment)
 
 	t.Segments = append(t.Segments, segment)
 

@@ -40,6 +40,7 @@ type gameConfig struct {
 	drawDebug      bool
 	drawRoad       bool
 	drawTunnel     bool
+	drawSprite     bool
 }
 
 type worldValues struct {
@@ -117,6 +118,7 @@ func (g *Game) Initialize() {
 		drawRoad:       true,
 		drawDebug:      true,
 		drawTunnel:     true,
+		drawSprite:     true,
 	}
 
 	// Setup the world
@@ -257,6 +259,10 @@ func (g *Game) Update() error {
 		g.config.drawTunnel = !g.config.drawTunnel
 	}
 
+	if inpututil.KeyPressDuration(ebiten.KeyS) == 1 {
+		g.config.drawSprite = !g.config.drawSprite
+	}
+
 	if inpututil.KeyPressDuration(ebiten.KeyR) == 1 {
 		g.config.drawRoad = !g.config.drawRoad
 	}
@@ -375,6 +381,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 
 		segments = append(segments, renderer.SegmentDetails{
+			Index:       segment.Index,
 			P1:          &segment.P1.Screen,
 			P2:          &segment.P2.Screen,
 			Color:       segment.Color,
@@ -393,13 +400,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		segment := segments[i]
 		g.render.Segment(screenWidth, screenHeight, g.config.lanes, segment)
 		for _, sprite := range segment.Sprites {
-			spriteScale := segment.P1.Scale
-			spriteX := segment.P1.X + (spriteScale * sprite.Offset * g.config.roadWidth * (screenWidth / 2))
+			spriteScale := 10.00    //segment.P1.Scale * g.world.spriteScale
+			spriteX := segment.P1.X // + (spriteScale * sprite.Offset * g.config.roadWidth * (screenWidth / 2))
 			spriteY := segment.P1.Y
 			offsetX := 0.0
 			if sprite.Offset < 0 {
 				offsetX = -1
 			}
+			log.Printf("Sprite: sw:%d sh:%d res:%f rdwth:%f scale:%f, X:%f,Y:%f,offX:%f,offY:%d,clipY:%d", screenWidth, screenHeight, float64(g.world.resolution), g.config.roadWidth, spriteScale, spriteX, spriteY, offsetX, 0, 0)
 			g.render.Sprite(screenWidth, screenHeight, float64(g.world.resolution), g.config.roadWidth, sprite.Sprite, spriteScale, spriteX, spriteY, offsetX, -1, 0)
 		}
 	}
@@ -410,12 +418,16 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		fogop.GeoM.Translate(0, maxy-16)
 		roadImg.DrawImage(g.fogImage, fogop)
 	}
-	if g.config.drawTunnel {
-		roadImg.DrawImage(g.render.TunnelImage(), nil)
-	}
-
 	if g.config.drawRoad {
 		screen.DrawImage(roadImg, nil)
+	}
+
+	if g.config.drawSprite {
+		screen.DrawImage(g.render.SpriteImage(), nil)
+	}
+
+	if g.config.drawTunnel {
+		screen.DrawImage(g.render.TunnelImage(), nil)
 	}
 
 	g.render.Clear()

@@ -17,6 +17,7 @@ var ()
 type Renderer struct {
 	img           *ebiten.Image
 	tunnelImg     *ebiten.Image
+	spriteImg     *ebiten.Image
 	debugImage    *ebiten.Image
 	util          *util.Util
 	whiteImage    *ebiten.Image
@@ -59,6 +60,7 @@ func NewRenderer(width, height int, util *util.Util) *Renderer {
 		debugImage:    ebiten.NewImage(width, height),
 		img:           ebiten.NewImage(width, height),
 		tunnelImg:     ebiten.NewImage(width, height),
+		spriteImg:     ebiten.NewImage(width, height),
 		util:          util,
 		whiteImage:    whiteImage,
 		whiteSubImage: whiteSubImage,
@@ -68,6 +70,7 @@ func NewRenderer(width, height int, util *util.Util) *Renderer {
 func (r *Renderer) Clear() {
 	r.img.Clear()
 	r.tunnelImg.Clear()
+	r.spriteImg.Clear()
 }
 
 func (r *Renderer) DebugPrintAt(msg string, xpos, ypos int) {
@@ -110,6 +113,7 @@ func (r *Renderer) Background(background Background, dstImg *ebiten.Image, playe
 }
 
 type SegmentDetails struct {
+	Index         int
 	P1            *util.Screenpoint
 	P2            *util.Screenpoint
 	Color         SegmentColor
@@ -126,24 +130,24 @@ type Sprite struct {
 }
 
 func (r *Renderer) Sprite(width, height, resolution, roadWidth float64, sprite *ebiten.Image, scale float64, destX, destY, offsetX, offsetY, clipY float64) {
-	screenX := width / 2 * (1 + destX/2)
-	screenY := height / 2 * (1 - destY/2)
-	scale = scale * width / 1024
-	w := float64(sprite.Bounds().Dx()) * scale
-	h := float64(sprite.Bounds().Dy()) * scale
+	//	screenX := width / 2 * (1 + destX/2)
+	//	screenY := height / 2 * (1 - destY/2)
+	//scale = scale * width / 1024
+	//w := float64(sprite.Bounds().Dx()) * scale
+	//h := float64(sprite.Bounds().Dy()) * scale
 
 	// Clip
-	if screenY > clipY {
+	/*if screenY > clipY {
 		return
-	}
+	}*/
 
 	// Draw
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(-w/2, -h/2)
-	op.GeoM.Translate(screenX, screenY)
-	op.GeoM.Scale(scale, scale)
-	op.GeoM.Translate(w/2+offsetX, h/2+offsetY)
-	r.img.DrawImage(sprite, op)
+	//op.GeoM.Translate(-w/2, -h/2)
+	op.GeoM.Translate(destX, destY)
+	//op.GeoM.Scale(scale, scale)
+	//op.GeoM.Translate(w/2+offsetX, h/2+offsetY)
+	r.spriteImg.DrawImage(sprite, op)
 }
 
 func (r *Renderer) Segment(width, height, lanes int, sd SegmentDetails) {
@@ -316,6 +320,10 @@ func (r *Renderer) Image() *ebiten.Image {
 
 func (r *Renderer) TunnelImage() *ebiten.Image {
 	return r.tunnelImg
+}
+
+func (r *Renderer) SpriteImage() *ebiten.Image {
+	return r.spriteImg
 }
 
 type polyPoint struct {
