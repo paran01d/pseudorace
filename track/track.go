@@ -46,8 +46,13 @@ func NewTrack(rumbleLength int, segmentLength int, playerZ float64, util *util.U
 }
 
 func (t *Track) addSprite(n int, sprite *ebiten.Image, offset float64) {
-	segment := &t.Segments[n]
-	segment.Sprites = append(segment.Sprites, &renderer.Sprite{Sprite: sprite, Offset: offset})
+	// Make sure n is within bounds
+	if n >= 0 && n < len(t.Segments) {
+		segment := &t.Segments[n]
+		// Limit offset to a reasonable range (-2 to 2)
+		offset = t.util.Limit(offset, -2.0, 2.0)
+		segment.Sprites = append(segment.Sprites, &renderer.Sprite{Sprite: sprite, Offset: offset})
+	}
 }
 
 func (t *Track) addSegment(curve float64, y float64, tunnelStart, tunnelEnd, inTunnel bool) {
@@ -200,10 +205,41 @@ func (t *Track) BuildTrack(obstacleImage *ebiten.Image, obstacleSprites map[stri
 	// Start and Finish markers
 	t.Segments[t.FindSegment(int(t.playerZ)).Index+2].Color = t.colors["START"]
 	t.Segments[t.FindSegment(int(t.playerZ)).Index+3].Color = t.colors["START"]
-	t.addSprite(t.FindSegment(int(t.playerZ)).Index+3, obstacleImage.SubImage(obstacleSprites["tower"].Rect()).(*ebiten.Image), 1)
+	
+	// Add sprites along the track with simplified positioning
+	// Start line marker and more sprites close to start for visibility
+	startPosSegment := t.FindSegment(int(t.playerZ)).Index
+	
+	// Add sprite at start position on both sides for visibility
+	t.addSprite(startPosSegment+5,
+		obstacleImage.SubImage(obstacleSprites["tower"].Rect()).(*ebiten.Image), -1.0) // Left side
+	t.addSprite(startPosSegment+5,
+		obstacleImage.SubImage(obstacleSprites["tower"].Rect()).(*ebiten.Image), 1.0)  // Right side
+		
+	// Add a series of sprites along the track on both sides
+	for i := 0; i < 20; i++ {
+		segment := startPosSegment + 10 + (i * 5) // Place more frequently for testing
+		if segment < len(t.Segments) {
+			// Left side sprite
+			t.addSprite(segment,
+				obstacleImage.SubImage(obstacleSprites["tower"].Rect()).(*ebiten.Image), -1.0)
+				
+			// Right side sprite
+			t.addSprite(segment,
+				obstacleImage.SubImage(obstacleSprites["tower"].Rect()).(*ebiten.Image), 1.0)
+		}
+	}
+	
+	// Add finish line markers
 	for n := 0; n < t.RumbleLength; n++ {
 		t.Segments[len(t.Segments)-1-n].Color = t.colors["FINISH"]
 	}
+	
+	// Add finish line towers on both sides
+	t.addSprite(len(t.Segments)-5,
+		obstacleImage.SubImage(obstacleSprites["tower"].Rect()).(*ebiten.Image), -1.0)
+	t.addSprite(len(t.Segments)-5,
+		obstacleImage.SubImage(obstacleSprites["tower"].Rect()).(*ebiten.Image), 1.0)
 
 	return len(t.Segments) * t.SegmentLength
 }

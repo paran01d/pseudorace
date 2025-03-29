@@ -130,23 +130,63 @@ type Sprite struct {
 }
 
 func (r *Renderer) Sprite(width, height, resolution, roadWidth float64, sprite *ebiten.Image, scale float64, destX, destY, offsetX, offsetY, clipY float64) {
-	//	screenX := width / 2 * (1 + destX/2)
-	//	screenY := height / 2 * (1 - destY/2)
-	//scale = scale * width / 1024
-	//w := float64(sprite.Bounds().Dx()) * scale
-	//h := float64(sprite.Bounds().Dy()) * scale
+	// Simple approach based on the Y value observations from the debug output
+	
+	// Define Y range based on observed values (far away: ~425, close: ~719)
+	minY := 380.0  // Y value at horizon
+	maxY := 750.0  // Y value at bottom of screen
+	
+	// Calculate normalized Y position for perspective calculations
+	normalizedY := math.Max(0, math.Min(1, (destY-minY)/(maxY-minY)))
+	
+	// Position sprites with perspective-correct offset from road edge
+	// The offset should increase as sprites get closer (larger Y values)
+	finalX := destX
+	if offsetX < 0 {
+		// Left side of road - offset scales with distance
+		// Small offset for far sprites, large offset for close sprites
+		edgeOffset := 30 + (normalizedY * 150) // Scale from 30px (far) to 180px (close)
+		finalX = destX - (roadWidth + edgeOffset)
+	} else if offsetX > 0 {
+		// Right side of road - offset scales with distance
+		// Small offset for far sprites, large offset for close sprites
+		edgeOffset := 30 + (normalizedY * 150) // Scale from 30px (far) to 180px (close)
+		finalX = destX + (roadWidth + edgeOffset)
+	}
+	
+	// Get sprite dimensions
+	spriteW := float64(sprite.Bounds().Dx())
+	spriteH := float64(sprite.Bounds().Dy())
 
-	// Clip
-	/*if screenY > clipY {
-		return
-	}*/
-
-	// Draw
+	// Calculate scale factor based on Y position
+	// - Small scale for sprites near horizon (small Y)
+	// - Large scale for sprites at bottom (large Y)
+	
+	// Apply scaling range from small (far) to large (close)
+	// Make sprites 4x larger as requested by the user
+	smallestScale := 0.2   // Size at horizon (4x increased from 0.05)
+	largestScale := 2.0    // Size at bottom (4x increased from 0.5)
+	
+	// Linear interpolation from small to large based on Y position
+	finalScale := smallestScale + normalizedY*(largestScale-smallestScale)
+	
+	// Debug info
+	yText := fmt.Sprintf("Y: %.1f S: %.2f", destY, finalScale)
+	ebitenutil.DebugPrintAt(r.spriteImg, yText, int(finalX-40), int(destY-20))
+	
+	// Draw the sprite with calculated scaling
 	op := &ebiten.DrawImageOptions{}
-	//op.GeoM.Translate(-w/2, -h/2)
-	op.GeoM.Translate(destX, destY)
-	//op.GeoM.Scale(scale, scale)
-	//op.GeoM.Translate(w/2+offsetX, h/2+offsetY)
+	
+	// Center sprite horizontally at bottom
+	op.GeoM.Translate(-spriteW/2, -spriteH)
+	
+	// Apply calculated scale
+	op.GeoM.Scale(finalScale, finalScale)
+	
+	// Position at calculated coordinates
+	op.GeoM.Translate(finalX, destY)
+	
+	// Draw sprite
 	r.spriteImg.DrawImage(sprite, op)
 }
 

@@ -118,7 +118,7 @@ func (g *Game) Initialize() {
 		drawRoad:       true,
 		drawDebug:      true,
 		drawTunnel:     true,
-		drawSprite:     true,
+		drawSprite:     true, // Always show sprites
 	}
 
 	// Setup the world
@@ -138,7 +138,9 @@ func (g *Game) Initialize() {
 	g.world.offRoadDecel = -g.world.maxSpeed / 2
 	g.world.offRoadLimit = g.world.maxSpeed / 4
 	g.world.playerZ = g.config.cameraHeight * g.world.cameraDepth
-	g.world.spriteScale = 0.3 * (1 / 128.00)
+	// Increase the sprite scale factor to make sprites more visible with perspective
+	// Use a larger scale value for sprites to be more visible
+	g.world.spriteScale = 1.5
 	g.world.screenScale = g.world.cameraDepth / g.world.playerZ
 
 	g.render = renderer.NewRenderer(1024, 768, g.util)
@@ -399,16 +401,77 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	for i := len(segments) - 1; i >= 0; i-- {
 		segment := segments[i]
 		g.render.Segment(screenWidth, screenHeight, g.config.lanes, segment)
+		// Draw sprites for this segment with improved tunnel clipping
 		for _, sprite := range segment.Sprites {
-			spriteScale := 10.00    //segment.P1.Scale * g.world.spriteScale
-			spriteX := segment.P1.X // + (spriteScale * sprite.Offset * g.config.roadWidth * (screenWidth / 2))
-			spriteY := segment.P1.Y
-			offsetX := 0.0
-			if sprite.Offset < 0 {
-				offsetX = -1
+			// Find the current segment the player is on
+			playerSegment := g.road.FindSegment(int(g.world.position + g.world.playerZ))
+			
+			// SIMPLIFIED VISIBILITY LOGIC
+			
+			// Check visibility based on tunnel locations
+			playerInTunnel := playerSegment.InTunnel
+			spriteInTunnel := segment.InTunnel
+			spriteBehindPlayer := segment.Index < playerSegment.Index
+			
+			// 1. If player is in a tunnel
+			if playerInTunnel {
+				// 1a. If sprite is in the same tunnel, show only if within width
+				if spriteInTunnel {
+					if sprite.Offset < -0.9 || sprite.Offset > 0.9 {
+						// Skip sprites outside the tunnel walls
+						continue
+					}
+				} else if spriteBehindPlayer {
+					// 1b. If sprite is outside the tunnel but behind player
+					// Skip - it's hidden by the tunnel entrance
+					continue
+				}
+				// 1c. If sprite is outside tunnel and ahead of player, show it
+				// (We're looking through the tunnel exit)
+			} else {
+				// 2. Player is outside tunnel
+				// 2a. If sprite is in a tunnel ahead of player, hide it
+				if spriteInTunnel && !spriteBehindPlayer {
+					continue
+				}
+				
+				// 2b. If sprite is in a tunnel behind player, show if within tunnel width
+				if spriteInTunnel && spriteBehindPlayer {
+					if sprite.Offset < -0.9 || sprite.Offset > 0.9 {
+						continue
+					}
+				}
+				
+				// 2c. If sprite is outside tunnel, check for blocking tunnels
+				if !spriteInTunnel {
+					skipSprite := false
+					// Look for tunnels between player and sprite
+					for j := playerSegment.Index + 1; j < segment.Index; j++ {
+						if j < len(g.road.Segments) && g.road.Segments[j].TunnelStart {
+							skipSprite = true
+							break
+						}
+					}
+					if skipSprite {
+						continue
+					}
+				}
 			}
-			log.Printf("Sprite: sw:%d sh:%d res:%f rdwth:%f scale:%f, X:%f,Y:%f,offX:%f,offY:%d,clipY:%d", screenWidth, screenHeight, float64(g.world.resolution), g.config.roadWidth, spriteScale, spriteX, spriteY, offsetX, 0, 0)
-			g.render.Sprite(screenWidth, screenHeight, float64(g.world.resolution), g.config.roadWidth, sprite.Sprite, spriteScale, spriteX, spriteY, offsetX, -1, 0)
+			
+			// Pass the segment's perspective scale factor correctly
+			// This will be inverted in the renderer to make sprites properly scale with distance
+			spriteScale := segment.P1.Scale
+			
+			// Position sprites at the segment's screen position
+			spriteX := segment.P1.X
+			spriteY := segment.P1.Y
+			
+			// Use the exact segment road width for positioning
+			segmentRoadWidth := segment.P1.W
+			
+			// Draw the sprite with proper perspective parameters
+			g.render.Sprite(float64(screenWidth), float64(screenHeight), float64(g.world.resolution),
+				segmentRoadWidth, sprite.Sprite, spriteScale, spriteX, spriteY, sprite.Offset, 0.0, maxy)
 		}
 	}
 
@@ -422,33 +485,70 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		screen.DrawImage(roadImg, nil)
 	}
 
-	if g.config.drawSprite {
-		screen.DrawImage(g.render.SpriteImage(), nil)
-	}
-
-	if g.config.drawTunnel {
-		screen.DrawImage(g.render.TunnelImage(), nil)
+	// Get the current player segment to check if we're in a tunnel
+	currentSegment := g.road.FindSegment(int(g.world.position + g.world.playerZ))
+	playerInTunnel := currentSegment.InTunnel
+	
+	// Conditional drawing order based on player's tunnel status
+	if playerInTunnel {
+		// When inside a tunnel:
+		// 1. Draw sprites first
+		if g.config.drawSprite {
+			screen.DrawImage(g.render.SpriteImage(), nil)
+		}
+		
+		// 2. Draw tunnels on top to clip sprites visible through exit
+		if g.config.drawTunnel {
+			screen.DrawImage(g.render.TunnelImage(), nil)
+		}
+	} else {
+		// When outside a tunnel:
+		// 1. Draw tunnels first
+		if g.config.drawTunnel {
+			screen.DrawImage(g.render.TunnelImage(), nil)
+		}
+		
+		// 2. Draw sprites on top
+		if g.config.drawSprite {
+			screen.DrawImage(g.render.SpriteImage(), nil)
+		}
 	}
 
 	g.render.Clear()
 
 	speedPercent := g.world.speed / g.world.maxSpeed
 
+	// Calculate bounce effect based on speed
 	bounceBase := (1.5 * rand.Float64() * speedPercent * float64(g.world.resolution))
 	bounceModify := []float64{-1, 1}[rand.Intn(2)]
 	bounce := bounceBase * bounceModify
-	op := &ebiten.DrawImageOptions{}
-	destW := ((128 * g.world.screenScale * screenWidth) / 2) * (g.world.spriteScale * g.config.roadWidth)
-	destH := ((128 * g.world.screenScale * screenHeight) / 2) * (g.world.spriteScale * g.config.roadWidth)
-
-	destX := ((screenWidth - destW) / 2)
-	//destY := (screenHeight + bounce - destH)
-	//destY := (screenHeight - destH) - (g.world.cameraDepth/g.world.playerZ*g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent))*((screenHeight-destH)/2) // + bounce
-	destY := float64((screenHeight+bounce)-destH) - (g.world.cameraDepth / g.world.playerZ * g.util.Interpolate(playerSegment.P1.Camera.Y, playerSegment.P2.Camera.Y, playerPercent))
-	op.GeoM.Scale(destW/128, destH/128)
-	op.GeoM.Translate(destX, destY)
+	
+	// Get player sprite dimensions
+	playerSprite := g.playerImage.SubImage(g.playerSprites[g.world.playerMode].Rect()).(*ebiten.Image)
+	playerWidth := float64(playerSprite.Bounds().Dx())
+	playerHeight := float64(playerSprite.Bounds().Dy())
+	
+	// Calculate player scaling
+	playerScale := 0.65 * g.world.screenScale
+	
+	// Calculate player position
+	destX := float64(screenWidth) / 2 // Center horizontally
+	destY := float64(screenHeight) * 0.85 // Position near bottom of screen
+	
+	// Apply a small vertical offset for the bounce effect
+	destY += bounce
+	
+	// Draw player sprite
 	if g.config.drawPlayer {
-		screen.DrawImage(g.playerImage.SubImage(g.playerSprites[g.world.playerMode].Rect()).(*ebiten.Image), op)
+		op := &ebiten.DrawImageOptions{}
+		// Center sprite
+		op.GeoM.Translate(-playerWidth/2, -playerHeight)
+		// Scale appropriately
+		op.GeoM.Scale(playerScale, playerScale)
+		// Position on screen
+		op.GeoM.Translate(destX, destY)
+		// Draw the player
+		screen.DrawImage(playerSprite, op)
 	}
 	if g.config.drawDebug {
 		g.render.ResetDebug()
